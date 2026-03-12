@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BetaLink Neural Interface</title>
+    <style>
+        :root {
+            --ui-accent: #00a2ff;
+            --bg: #030305;
+            --panel: rgba(10, 12, 18, 0.98);
+            --border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.5);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+        }
+        body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); margin: 0; height: 100vh; display: flex; overflow: hidden; }
+
+        .sidebar {
+            width: 300px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: -10px 0 50px rgba(0,0,0,0.9);
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar-header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 5px; }
+        .sidebar-header h1 { font-size: 1.1rem; margin: 0; letter-spacing: 3px; text-transform: uppercase; color: var(--ui-accent); text-shadow: 0 0 15px rgba(0,162,255,0.5); }
+
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .control-group label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; }
+
+        select, input, button {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        select option { background: #1a1d26; color: white; }
+        input[type="color"] { height: 42px; padding: 4px; cursor: pointer; border-radius: 4px; }
+        select:focus, input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 2px rgba(0,162,255,0.2); }
+
+        button {
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            background: var(--ui-accent);
+            color: #000;
+            border: none;
+        }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0,162,255,0.4); }
+        button.secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
+
+        .viewport { flex: 1; position: relative; overflow: hidden; background: radial-gradient(circle at center, #11141d 0%, #030305 100%); cursor: crosshair; }
+        .viewport::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; }
+
+        #canvas-wrapper { position: absolute; transform-origin: 0 0; will-change: transform; }
+        canvas { box-shadow: 0 0 100px rgba(0,0,0,1); image-rendering: pixelated; }
+
+        .hint { font-size: 0.7rem; color: var(--text-secondary); margin-top: auto; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 15px; }
+        .status-dot { display: inline-block; width: 7px; height: 7px; background: #0f0; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 10px #0f0; }
+    </style>
+</head>
+<body>
+
+<div class="viewport" id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+</div>
+
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h1>BetaLink Hub</h1>
+        <div style="font-size: 0.6rem; color: var(--ui-accent); opacity: 0.7; margin-top: 4px; font-weight: bold;">NEURAL_CENSOR_OS_V4.5</div>
+    </div>
+
+    <div class="control-group">
+        <label>Neural Input</label>
+        <input type="file" id="upload" accept="image/*">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div class="control-group" style="flex: 1;">
+            <label>Censor LVL</label>
+            <input type="number" id="level" value="3" min="1" max="99">
+        </div>
+        <div class="control-group" style="flex: 1;">
+            <label>Protection %</label>
+            <input type="number" id="pct" value="100" min="0" max="100">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label>Algorithm Color</label>
+        <input type="color" id="censorColor" value="#00f2ff">
+    </div>
+
+    <div class="control-group">
+        <label>HUD Interface Color</label>
+        <input type="color" id="hudColor" value="#ffffff">
+    </div>
+
+    <div class="control-group">
+        <label>Blocking Algorithm</label>
+        <select id="fx">
+            <option value="pixel">PIXELATE</option>
+            <option value="black">VOID BLACK</option>
+            <option value="glitch">NEURAL GLITCH</option>
+            <option value="hex">HEX ENCRYPT</option>
+            <option value="hazard">STIMULI WARNING</option>
+            <option value="grid">SCAN GRID</option>
+        </select>
+    </div>
+
+    <div class="control-group">
+        <label>Interface Skin</label>
+        <select id="hudStyle">
+            <option value="default">BETA-STANDARD</option>
+            <option value="tactical">NEURAL-SWAT</option>
+            <option value="minimal">CIV-SAFE</option>
+            <option value="warning">TOTAL-BLOCK</option>
+            <option value="retro">LEGACY-LINK</option>
+            <option value="ghost">SYNAPTIC-VOID</option>
+        </select>
+    </div>
+
+    <div class="control-group">
+        <label>HUD Position</label>
+        <select id="hudPos">
+            <option value="tr">TOP-RIGHT</option>
+            <option value="tl">TOP-LEFT</option>
+            <option value="br">BOTTOM-RIGHT</option>
+            <option value="bl">BOTTOM-LEFT</option>
+        </select>
+    </div>
+
+    <button id="copy">Sync to Clipboard</button>
+    <button id="undo" class="secondary">Undo (Ctrl+Z)</button>
+
+    <div class="hint">
+        <b>CONTROLS:</b><br>
+        • Scroll: Zoom | Mid-Click: Pan<br>
+        • Drag: Mask Area<br>
+        <span class="status-dot"></span> STATUS: <span style="color:#0f0">LINK ESTABLISHED</span>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper'), viewport = document.getElementById('viewport');
+    let img = new Image(), zones = [], scale = 1, offX = 0, offY = 0;
+    let isDrawing = false, isPanning = false, startX, startY;
+
+    function drawHUD() {
+        if (!img.src) return;
+        const style = document.getElementById('hudStyle').value;
+        const pos = document.getElementById('hudPos').value;
+        const lvl = document.getElementById('level').value;
+        const pct = document.getElementById('pct').value;
+        const hudColor = document.getElementById('hudColor').value;
+
+        const w = 260, h = 95, p = 30;
+        let x, y;
+        if (pos === 'tl') { x = p; y = p; }
+        else if (pos === 'tr') { x = canvas.width - w - p; y = p; }
+        else if (pos === 'bl') { x = p; y = canvas.height - h - p; }
+        else { x = canvas.width - w - p; y = canvas.height - h - p; }
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Background plate for legibility on all styles
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.shadowBlur = 0;
+
+        ctx.save();
+        ctx.shadowBlur = 20; ctx.shadowColor = hudColor; ctx.strokeStyle = hudColor; ctx.lineWidth = 2;
+
+        if (style === 'default') {
+            ctx.fillStyle = "rgba(5, 7, 12, 0.9)";
+            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w-20,y); ctx.lineTo(x+w,y+20); ctx.lineTo(x+w,y+h); ctx.lineTo(x+20,y+h); ctx.lineTo(x,y+h-20); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = hudColor; ctx.font = "bold 16px monospace"; ctx.fillText("BetaLink v4.5", x+15, y+30);
+            ctx.font = "10px monospace"; ctx.fillText("> STATUS: MASKING ACTIVE", x+15, y+50);
+            ctx.fillText(`> CENSOR LVL: ${lvl} (${pct}%)`, x+15, y+65);
+            ctx.fillRect(x+15, y+75, (pct * 2.3), 4);
+        } else if (style === 'tactical') {
+            ctx.fillStyle = "rgba(10, 15, 20, 0.95)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x+3, y+3, w-6, h-6);
+            ctx.fillStyle = hudColor; ctx.font = "900 13px monospace";
+            ctx.fillText("[ NEURAL-SEC PROT ]", x+15, y+28);
+            ctx.font = "11px monospace";
+            ctx.fillText(`CENSOR LVL: ${lvl}`, x+15, y+50);
+            ctx.fillText(`PROTECTION: ${pct}%`, x+15, y+70);
+            ctx.strokeRect(x+w-40, y+15, 25, 25);
+        } else if (style === 'minimal') {
+            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(x, y+h-50, w, 50);
+            ctx.strokeRect(x, y+h-50, w, 50);
+            ctx.fillStyle = hudColor; ctx.font = "bold 11px monospace";
+            ctx.fillText(`ID: ${lvl} | SEC: ${pct}%`, x+15, y+h-20);
+        } else if (style === 'warning') {
+            ctx.fillStyle = "rgba(40, 5, 5, 0.95)"; ctx.strokeStyle = "#ff0000";
+            ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = "#ff0000"; ctx.font = "bold 18px monospace";
+            ctx.fillText(`CRITICAL: ${pct}%`, x+25, y+35);
+            ctx.fillStyle = "#fff"; ctx.font = "11px monospace"; ctx.fillText(`BLOCK_LEVEL: ${lvl}`, x+15, y+65);
+        } else if (style === 'retro') {
+            ctx.fillStyle = "rgba(0, 30, 0, 0.9)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x,y,w,h);
+            ctx.fillStyle = hudColor; ctx.font = "12px 'Courier New'";
+            ctx.fillText(`LN: ${lvl} P_VAL: ${pct}%`, x+10, y+30);
+            ctx.fillText(`STATUS: ENCRYPTED`, x+10, y+55);
+            ctx.fillText(`_________________`, x+10, y+70);
+        } else if (style === 'ghost') {
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.roundRect(x, y, w, 60, 10); ctx.fill();
+            ctx.strokeStyle = hudColor; ctx.stroke();
+            ctx.fillStyle = hudColor; ctx.font = "italic 15px sans-serif";
+            ctx.fillText(`Neural Link: ${lvl}`, x+20, y+35);
+        }
+        ctx.restore();
+    }
+
+    function render() {
+        if (!img.src) return;
+        const censorColor = document.getElementById('censorColor').value;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        zones.forEach(z => {
+            ctx.save();
+            if (z.mode === 'pixel') {
+                const s = 15; const tw = Math.max(1, z.w/s), th = Math.max(1, z.h/s);
+                const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
+                tmp.getContext('2d').drawImage(canvas, z.x, z.y, z.w, z.h, 0, 0, tw, th);
+                ctx.imageSmoothingEnabled = false; ctx.drawImage(tmp, 0, 0, tw, th, z.x, z.y, z.w, z.h);
+            } else if (z.mode === 'black') {
+                ctx.fillStyle = '#000'; ctx.fillRect(z.x, z.y, z.w, z.h);
+            } else if (z.mode === 'glitch') {
+                const id = ctx.getImageData(z.x, z.y, z.w, z.h);
+                const rgb = parseInt(censorColor.substring(1), 16);
+                const r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+                for(let i=0; i<id.data.length; i+=4) if(Math.random() > 0.85) { id.data[i]=r; id.data[i+1]=g; id.data[i+2]=b; }
+                ctx.putImageData(id, z.x, z.y);
+            } else if (z.mode === 'hex') {
+                ctx.fillStyle = "rgba(0,0,0,0.92)"; ctx.fillRect(z.x, z.y, z.w, z.h);
+                ctx.fillStyle = censorColor; ctx.font = "8px monospace";
+                for(let gy=0; gy<z.h; gy+=10) ctx.fillText(Math.random().toString(16).substr(2, Math.floor(z.w/6)), z.x+2, z.y+gy);
+            } else if (z.mode === 'hazard') {
+                ctx.save(); ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h); ctx.clip();
+                ctx.fillStyle = censorColor; ctx.fillRect(z.x, z.y, z.w, z.h); ctx.strokeStyle = "#000"; ctx.lineWidth = 10;
+                for(let i=-100; i<z.w+z.h; i+=25) { ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i+30, z.y+z.h); ctx.stroke(); }
+                ctx.restore();
+            } else if (z.mode === 'grid') {
+                ctx.strokeStyle = censorColor; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+                for(let i=0; i<z.w; i+=10) { ctx.beginPath(); ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i, z.y+z.h); ctx.stroke(); }
+                for(let i=0; i<z.h; i+=10) { ctx.beginPath(); ctx.moveTo(z.x, z.y+i); ctx.lineTo(z.x+z.w, z.y+i); ctx.stroke(); }
+            }
+            ctx.restore();
+        });
+        drawHUD();
+    }
+
+    function updateXform() { wrapper.style.transform = `translate(${offX}px, ${offY}px) scale(${scale})`; }
+
+    viewport.onwheel = e => {
+        e.preventDefault();
+        const zoom = e.deltaY > 0 ? 0.9 : 1.1;
+        const rect = viewport.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        offX = mx - (mx - offX) * zoom; offY = my - (my - offY) * zoom;
+        scale *= zoom; updateXform();
+    };
+
+    viewport.onmousedown = e => {
+        if (e.button === 1) { isPanning = true; e.preventDefault(); return; }
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = (e.clientX - rect.left) / scale; startY = (e.clientY - rect.top) / scale;
+    };
+
+    window.onmousemove = e => { if (isPanning) { offX += e.movementX; offY += e.movementY; updateXform(); } };
+    window.onmouseup = e => {
+        if (isDrawing) {
+            const rect = canvas.getBoundingClientRect();
+            const ex = (e.clientX - rect.left) / scale, ey = (e.clientY - rect.top) / scale;
+            if(Math.abs(ex-startX) > 2) {
+                zones.push({ x: Math.min(startX, ex), y: Math.min(startY, ey), w: Math.abs(ex-startX), h: Math.abs(ey-startY), mode: document.getElementById('fx').value });
+                render();
+            }
+        }
+        isDrawing = isPanning = false;
+    };
+
+    document.getElementById('upload').onchange = e => {
+        const r = new FileReader();
+        r.onload = ev => { img.onload = () => {
+            canvas.width = img.width; canvas.height = img.height;
+            scale = Math.min(viewport.offsetWidth/img.width, viewport.offsetHeight/img.height) * 0.9;
+            offX = (viewport.offsetWidth - img.width * scale) / 2;
+            offY = (viewport.offsetHeight - img.height * scale) / 2;
+            updateXform(); render();
+        }; img.src = ev.target.result; };
+        r.readAsDataURL(e.target.files[0]);
+    };
+
+    const undo = () => { zones.pop(); render(); };
+    document.getElementById('undo').onclick = undo;
+    window.onkeydown = e => { if(e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } };
+    document.getElementById('copy').onclick = () => canvas.toBlob(b => navigator.clipboard.write([new ClipboardItem({"image/png":b})]));
+
+    ['level', 'pct', 'censorColor', 'hudColor', 'hudStyle', 'hudPos'].forEach(id => document.getElementById(id).oninput = render);
+    setInterval(render, 150);
+</script>
+</body>
+</html>
