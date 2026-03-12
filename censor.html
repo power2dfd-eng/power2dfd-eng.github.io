@@ -22,14 +22,20 @@
             padding: 25px;
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 12px;
             box-shadow: -10px 0 50px rgba(0,0,0,0.9);
             z-index: 100;
             backdrop-filter: blur(20px);
+            overflow-y: auto;
         }
 
         .sidebar-header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 5px; }
         .sidebar-header h1 { font-size: 1.1rem; margin: 0; letter-spacing: 3px; text-transform: uppercase; color: var(--ui-accent); text-shadow: 0 0 15px rgba(0,162,255,0.5); }
+
+        details { border: 1px solid var(--border); border-radius: 4px; background: rgba(255,255,255,0.02); }
+        summary { cursor: pointer; padding: 10px; font-size: 0.75rem; font-weight: 800; color: var(--ui-accent); text-transform: uppercase; list-style: none; outline: none; border-bottom: 1px solid transparent; }
+        details[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+        .menu-content { padding: 0 10px 10px 10px; display: flex; flex-direction: column; gap: 12px; }
 
         .control-group { display: flex; flex-direction: column; gap: 6px; }
         .control-group label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; }
@@ -38,7 +44,7 @@
             background: var(--input-bg);
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 12px;
+            padding: 10px;
             border-radius: 4px;
             font-family: inherit;
             font-size: 0.85rem;
@@ -46,6 +52,7 @@
             outline: none;
         }
 
+        input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--ui-accent); }
         select option { background: #1a1d26; color: white; }
         input[type="color"] { height: 42px; padding: 4px; cursor: pointer; border-radius: 4px; }
         select:focus, input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 2px rgba(0,162,255,0.2); }
@@ -70,7 +77,7 @@
         canvas { box-shadow: 0 0 100px rgba(0,0,0,1); image-rendering: pixelated; }
 
         .hint { font-size: 0.7rem; color: var(--text-secondary); margin-top: auto; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 15px; }
-        .status-dot { display: inline-block; width: 7px; height: 7px; background: #0f0; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 10px #0f0; }
+        .status-dot { display: inline-block; width: 7px; height: 7px; background: #0f0; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 100px #0f0; }
     </style>
 </head>
 <body>
@@ -87,65 +94,74 @@
         <div style="font-size: 0.6rem; color: var(--ui-accent); opacity: 0.7; margin-top: 4px; font-weight: bold;">NEURAL_CENSOR_OS_V4.5</div>
     </div>
 
-    <div class="control-group">
-        <label>Neural Input</label>
-        <input type="file" id="upload" accept="image/*">
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-        <div class="control-group" style="flex: 1;">
-            <label>Censor LVL</label>
-            <input type="number" id="level" value="3" min="1" max="99">
+    <details open>
+        <summary>Censor Settings</summary>
+        <div class="menu-content">
+            <div class="control-group">
+                <label>Neural Input</label>
+                <input type="file" id="upload" accept="image/*">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <div class="control-group" style="flex: 1;">
+                    <label>Censor LVL</label>
+                    <input type="number" id="level" value="3" min="1" max="99">
+                </div>
+                <div class="control-group" style="flex: 1;">
+                    <label>Protection %</label>
+                    <input type="number" id="pct" value="100" min="0" max="100">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Algorithm Color</label>
+                <input type="color" id="censorColor" value="#00f2ff">
+            </div>
+            <div class="control-group">
+                <label>Blocking Algorithm</label>
+                <select id="fx">
+                    <option value="pixel">PIXELATE</option>
+                    <option value="black">VOID BLACK</option>
+                    <option value="glitch">NEURAL GLITCH</option>
+                    <option value="hex">HEX ENCRYPT</option>
+                    <option value="hazard">STIMULI WARNING</option>
+                    <option value="grid">SCAN GRID</option>
+                </select>
+            </div>
         </div>
-        <div class="control-group" style="flex: 1;">
-            <label>Protection %</label>
-            <input type="number" id="pct" value="100" min="0" max="100">
+    </details>
+
+    <details open>
+        <summary>Beta HUD Settings</summary>
+        <div class="menu-content">
+            <div class="control-group">
+                <label>HUD Interface Color</label>
+                <input type="color" id="hudColor" value="#ffffff">
+            </div>
+            <div class="control-group">
+                <label>HUD Size (%)</label>
+                <input type="range" id="hudScale" min="20" max="250" value="100">
+            </div>
+            <div class="control-group">
+                <label>Interface Skin</label>
+                <select id="hudStyle">
+                    <option value="default">BETA-STANDARD</option>
+                    <option value="tactical">NEURAL-SWAT</option>
+                    <option value="minimal">CIV-SAFE</option>
+                    <option value="warning">TOTAL-BLOCK</option>
+                    <option value="retro">LEGACY-LINK</option>
+                    <option value="ghost">SYNAPTIC-VOID</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>HUD Position</label>
+                <select id="hudPos">
+                    <option value="tr">TOP-RIGHT</option>
+                    <option value="tl">TOP-LEFT</option>
+                    <option value="br">BOTTOM-RIGHT</option>
+                    <option value="bl">BOTTOM-LEFT</option>
+                </select>
+            </div>
         </div>
-    </div>
-
-    <div class="control-group">
-        <label>Algorithm Color</label>
-        <input type="color" id="censorColor" value="#00f2ff">
-    </div>
-
-    <div class="control-group">
-        <label>HUD Interface Color</label>
-        <input type="color" id="hudColor" value="#ffffff">
-    </div>
-
-    <div class="control-group">
-        <label>Blocking Algorithm</label>
-        <select id="fx">
-            <option value="pixel">PIXELATE</option>
-            <option value="black">VOID BLACK</option>
-            <option value="glitch">NEURAL GLITCH</option>
-            <option value="hex">HEX ENCRYPT</option>
-            <option value="hazard">STIMULI WARNING</option>
-            <option value="grid">SCAN GRID</option>
-        </select>
-    </div>
-
-    <div class="control-group">
-        <label>Interface Skin</label>
-        <select id="hudStyle">
-            <option value="default">BETA-STANDARD</option>
-            <option value="tactical">NEURAL-SWAT</option>
-            <option value="minimal">CIV-SAFE</option>
-            <option value="warning">TOTAL-BLOCK</option>
-            <option value="retro">LEGACY-LINK</option>
-            <option value="ghost">SYNAPTIC-VOID</option>
-        </select>
-    </div>
-
-    <div class="control-group">
-        <label>HUD Position</label>
-        <select id="hudPos">
-            <option value="tr">TOP-RIGHT</option>
-            <option value="tl">TOP-LEFT</option>
-            <option value="br">BOTTOM-RIGHT</option>
-            <option value="bl">BOTTOM-LEFT</option>
-        </select>
-    </div>
+    </details>
 
     <button id="copy">Sync to Clipboard</button>
     <button id="undo" class="secondary">Undo (Ctrl+Z)</button>
@@ -171,8 +187,9 @@
         const lvl = document.getElementById('level').value;
         const pct = document.getElementById('pct').value;
         const hudColor = document.getElementById('hudColor').value;
+        const s = document.getElementById('hudScale').value / 100;
 
-        const w = 260, h = 95, p = 30;
+        const w = 260 * s, h = 95 * s, p = 30;
         let x, y;
         if (pos === 'tl') { x = p; y = p; }
         else if (pos === 'tr') { x = canvas.width - w - p; y = p; }
@@ -180,52 +197,49 @@
         else { x = canvas.width - w - p; y = canvas.height - h - p; }
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        // Background plate for legibility on all styles
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.shadowBlur = 0;
-
         ctx.save();
-        ctx.shadowBlur = 20; ctx.shadowColor = hudColor; ctx.strokeStyle = hudColor; ctx.lineWidth = 2;
+        ctx.shadowBlur = 20 * s; ctx.shadowColor = hudColor; ctx.strokeStyle = hudColor; ctx.lineWidth = 2 * s;
 
         if (style === 'default') {
             ctx.fillStyle = "rgba(5, 7, 12, 0.9)";
-            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w-20,y); ctx.lineTo(x+w,y+20); ctx.lineTo(x+w,y+h); ctx.lineTo(x+20,y+h); ctx.lineTo(x,y+h-20); ctx.closePath();
+            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w-(20*s),y); ctx.lineTo(x+w,y+(20*s)); ctx.lineTo(x+w,y+h); ctx.lineTo(x+(20*s),y+h); ctx.lineTo(x,y+h-(20*s)); ctx.closePath();
             ctx.fill(); ctx.stroke();
-            ctx.fillStyle = hudColor; ctx.font = "bold 16px monospace"; ctx.fillText("BetaLink v4.5", x+15, y+30);
-            ctx.font = "10px monospace"; ctx.fillText("> STATUS: MASKING ACTIVE", x+15, y+50);
-            ctx.fillText(`> CENSOR LVL: ${lvl} (${pct}%)`, x+15, y+65);
-            ctx.fillRect(x+15, y+75, (pct * 2.3), 4);
+            ctx.fillStyle = hudColor; ctx.font = `bold ${16*s}px monospace`; ctx.fillText("BetaLink v4.5", x+(15*s), y+(30*s));
+            ctx.font = `${10*s}px monospace`; ctx.fillText("> STATUS: MASKING ACTIVE", x+(15*s), y+(50*s));
+            ctx.fillText(`> CENSOR LVL: ${lvl} (${pct}%)`, x+(15*s), y+(65*s));
+            ctx.fillRect(x+(15*s), y+(75*s), (pct * 2.3 * s), 4 * s);
         } else if (style === 'tactical') {
-            ctx.fillStyle = "rgba(10, 15, 20, 0.95)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x+3, y+3, w-6, h-6);
-            ctx.fillStyle = hudColor; ctx.font = "900 13px monospace";
-            ctx.fillText("[ NEURAL-SEC PROT ]", x+15, y+28);
-            ctx.font = "11px monospace";
-            ctx.fillText(`CENSOR LVL: ${lvl}`, x+15, y+50);
-            ctx.fillText(`PROTECTION: ${pct}%`, x+15, y+70);
-            ctx.strokeRect(x+w-40, y+15, 25, 25);
+            ctx.fillStyle = "rgba(10, 15, 20, 0.95)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x+(3*s), y+(3*s), w-(6*s), h-(6*s));
+            ctx.fillStyle = hudColor; ctx.font = `900 ${13*s}px monospace`;
+            ctx.fillText("[ NEURAL-SEC PROT ]", x+(15*s), y+(28*s));
+            ctx.font = `${11*s}px monospace`;
+            ctx.fillText(`CENSOR LVL: ${lvl}`, x+(15*s), y+(50*s));
+            ctx.fillText(`PROTECTION: ${pct}%`, x+(15*s), y+(70*s));
+            ctx.strokeRect(x+w-(40*s), y+(15*s), 25*s, 25*s);
         } else if (style === 'minimal') {
-            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(x, y+h-50, w, 50);
-            ctx.strokeRect(x, y+h-50, w, 50);
-            ctx.fillStyle = hudColor; ctx.font = "bold 11px monospace";
-            ctx.fillText(`ID: ${lvl} | SEC: ${pct}%`, x+15, y+h-20);
+            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(x, y+h-(50*s), w, 50*s);
+            ctx.strokeRect(x, y+h-(50*s), w, 50*s);
+            ctx.fillStyle = hudColor; ctx.font = `bold ${11*s}px monospace`;
+            ctx.fillText(`ID: ${lvl} | SEC: ${pct}%`, x+(15*s), y+h-(20*s));
         } else if (style === 'warning') {
             ctx.fillStyle = "rgba(40, 5, 5, 0.95)"; ctx.strokeStyle = "#ff0000";
             ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
-            ctx.fillStyle = "#ff0000"; ctx.font = "bold 18px monospace";
-            ctx.fillText(`CRITICAL: ${pct}%`, x+25, y+35);
-            ctx.fillStyle = "#fff"; ctx.font = "11px monospace"; ctx.fillText(`BLOCK_LEVEL: ${lvl}`, x+15, y+65);
+            ctx.fillStyle = "#ff0000"; ctx.font = `bold ${18*s}px monospace`;
+            ctx.fillText(`CRITICAL: ${pct}%`, x+(25*s), y+(35*s));
+            ctx.fillStyle = "#fff"; ctx.font = `${11*s}px monospace`; ctx.fillText(`BLOCK_LEVEL: ${lvl}`, x+(15*s), y+(65*s));
         } else if (style === 'retro') {
             ctx.fillStyle = "rgba(0, 30, 0, 0.9)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x,y,w,h);
-            ctx.fillStyle = hudColor; ctx.font = "12px 'Courier New'";
-            ctx.fillText(`LN: ${lvl} P_VAL: ${pct}%`, x+10, y+30);
-            ctx.fillText(`STATUS: ENCRYPTED`, x+10, y+55);
-            ctx.fillText(`_________________`, x+10, y+70);
+            ctx.fillStyle = hudColor; ctx.font = `${12*s}px 'Courier New'`;
+            ctx.fillText(`LN: ${lvl} P_VAL: ${pct}%`, x+(10*s), y+(30*s));
+            ctx.fillText(`STATUS: ENCRYPTED`, x+(10*s), y+(55*s));
+            ctx.fillText(`_________________`, x+(10*s), y+(70*s));
         } else if (style === 'ghost') {
-            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.roundRect(x, y, w, 60, 10); ctx.fill();
-            ctx.strokeStyle = hudColor; ctx.stroke();
-            ctx.fillStyle = hudColor; ctx.font = "italic 15px sans-serif";
-            ctx.fillText(`Neural Link: ${lvl}`, x+20, y+35);
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(x, y, w, 60 * s, 10 * s); else ctx.rect(x,y,w,60*s);
+            ctx.fill(); ctx.strokeStyle = hudColor; ctx.stroke();
+            ctx.fillStyle = hudColor; ctx.font = `italic ${15*s}px sans-serif`;
+            ctx.fillText(`Neural Link: ${lvl}`, x+(20*s), y+(35*s));
         }
         ctx.restore();
     }
@@ -239,7 +253,7 @@
         zones.forEach(z => {
             ctx.save();
             if (z.mode === 'pixel') {
-                const s = 15; const tw = Math.max(1, z.w/s), th = Math.max(1, z.h/s);
+                const step = 15; const tw = Math.max(1, z.w/step), th = Math.max(1, z.h/step);
                 const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
                 tmp.getContext('2d').drawImage(canvas, z.x, z.y, z.w, z.h, 0, 0, tw, th);
                 ctx.imageSmoothingEnabled = false; ctx.drawImage(tmp, 0, 0, tw, th, z.x, z.y, z.w, z.h);
@@ -318,7 +332,7 @@
     window.onkeydown = e => { if(e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } };
     document.getElementById('copy').onclick = () => canvas.toBlob(b => navigator.clipboard.write([new ClipboardItem({"image/png":b})]));
 
-    ['level', 'pct', 'censorColor', 'hudColor', 'hudStyle', 'hudPos'].forEach(id => document.getElementById(id).oninput = render);
+    ['level', 'pct', 'censorColor', 'hudColor', 'hudStyle', 'hudPos', 'hudScale', 'fx'].forEach(id => document.getElementById(id).oninput = render);
     setInterval(render, 150);
 </script>
 </body>
