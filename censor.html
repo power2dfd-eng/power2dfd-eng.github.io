@@ -1,339 +1,1091 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>BetaLink Neural Interface</title>
-    <style>
-        :root {
-            --ui-accent: #00a2ff;
-            --bg: #030305;
-            --panel: rgba(10, 12, 18, 0.98);
-            --border: rgba(255, 255, 255, 0.12);
-            --input-bg: rgba(0, 0, 0, 0.5);
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-        }
-        body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); margin: 0; height: 100vh; display: flex; overflow: hidden; }
+<meta charset="UTF-8">
+<title>BetaLink Neural Interface</title>
+<style>
+:root {
+    --ui-accent: #00a2ff;
+    --bg: #030305;
+    --panel: rgba(10, 12, 18, 0.98);
+    --border: rgba(255,255,255,0.11);
+    --input-bg: rgba(0,0,0,0.5);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+}
+* { box-sizing: border-box; }
+body { font-family: 'Inter','Segoe UI',system-ui,sans-serif; background: var(--bg); color: var(--text-primary); margin: 0; height: 100vh; display: flex; overflow: hidden; }
 
-        .sidebar {
-            width: 300px;
-            background: var(--panel);
-            border-left: 1px solid var(--border);
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-shadow: -10px 0 50px rgba(0,0,0,0.9);
-            z-index: 100;
-            backdrop-filter: blur(20px);
-            overflow-y: auto;
-        }
+/* ── SIDEBAR ── */
+.sidebar {
+    width: 308px; min-width: 308px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 16px 16px 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    box-shadow: -10px 0 50px rgba(0,0,0,0.9);
+    z-index: 100; backdrop-filter: blur(20px);
+    overflow-y: auto; overflow-x: hidden;
+}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(0,162,255,0.25); border-radius: 2px; }
 
-        .sidebar-header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 5px; }
-        .sidebar-header h1 { font-size: 1.1rem; margin: 0; letter-spacing: 3px; text-transform: uppercase; color: var(--ui-accent); text-shadow: 0 0 15px rgba(0,162,255,0.5); }
+.sidebar-header { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 2px; }
+.sidebar-header h1 { font-size: 1.05rem; margin: 0; letter-spacing: 3px; text-transform: uppercase; color: var(--ui-accent); text-shadow: 0 0 15px rgba(0,162,255,0.5); }
+.sidebar-header .ver { font-size: 0.58rem; color: var(--ui-accent); opacity: 0.65; margin-top: 3px; font-weight: 700; letter-spacing: 2px; }
 
-        details { border: 1px solid var(--border); border-radius: 4px; background: rgba(255,255,255,0.02); }
-        summary { cursor: pointer; padding: 10px; font-size: 0.75rem; font-weight: 800; color: var(--ui-accent); text-transform: uppercase; list-style: none; outline: none; border-bottom: 1px solid transparent; }
-        details[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
-        .menu-content { padding: 0 10px 10px 10px; display: flex; flex-direction: column; gap: 12px; }
+details { border: 1px solid var(--border); border-radius: 4px; background: rgba(255,255,255,0.018); }
+summary { cursor: pointer; padding: 9px 11px; font-size: 0.72rem; font-weight: 800; color: var(--ui-accent); text-transform: uppercase; list-style: none; outline: none; border-bottom: 1px solid transparent; user-select: none; letter-spacing: 0.8px; }
+details[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.menu-content { padding: 10px 10px 10px; display: flex; flex-direction: column; gap: 10px; }
 
-        .control-group { display: flex; flex-direction: column; gap: 6px; }
-        .control-group label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; }
+.control-group { display: flex; flex-direction: column; gap: 5px; }
+.control-group label { font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.4px; }
 
-        select, input, button {
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            padding: 10px;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-            outline: none;
-        }
+select, input, button {
+    background: var(--input-bg); border: 1px solid var(--border);
+    color: var(--text-primary); padding: 9px 10px; border-radius: 4px;
+    font-family: inherit; font-size: 0.82rem; transition: border-color 0.18s, box-shadow 0.18s; outline: none; width: 100%;
+}
+input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--ui-accent); }
+input[type="color"] { height: 40px; padding: 3px 4px; cursor: pointer; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+select option { background: #1a1d26; color: white; }
+select:focus, input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 2px rgba(0,162,255,0.18); }
 
-        input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--ui-accent); }
-        select option { background: #1a1d26; color: white; }
-        input[type="color"] { height: 42px; padding: 4px; cursor: pointer; border-radius: 4px; }
-        select:focus, input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 2px rgba(0,162,255,0.2); }
+button { cursor: pointer; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; background: var(--ui-accent); color: #000; border: none; }
+button:hover { filter: brightness(1.2); box-shadow: 0 0 18px rgba(0,162,255,0.4); }
+button.secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
+button.secondary:hover { background: rgba(255,255,255,0.1); box-shadow: none; filter: none; }
+button.danger { background: rgba(255,30,30,0.1); color: #ff4444; border: 1px solid rgba(255,30,30,0.25); }
+button.danger:hover { background: rgba(255,30,30,0.22); box-shadow: 0 0 12px rgba(255,0,0,0.2); filter: none; }
 
-        button {
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: 900;
-            letter-spacing: 1px;
-            margin-top: 5px;
-            background: var(--ui-accent);
-            color: #000;
-            border: none;
-        }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0,162,255,0.4); }
-        button.secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
+.btn-row { display: flex; gap: 7px; }
+.btn-row button { flex: 1; margin-top: 0; }
 
-        .viewport { flex: 1; position: relative; overflow: hidden; background: radial-gradient(circle at center, #11141d 0%, #030305 100%); cursor: crosshair; }
-        .viewport::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; }
+.range-row { display: flex; align-items: center; gap: 8px; }
+.range-row input[type="range"] { flex: 1; }
+.range-val { font-size: 0.68rem; color: var(--ui-accent); min-width: 34px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        #canvas-wrapper { position: absolute; transform-origin: 0 0; will-change: transform; }
-        canvas { box-shadow: 0 0 100px rgba(0,0,0,1); image-rendering: pixelated; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 1px 0; }
+.toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.08); border-radius: 20px; cursor: pointer; border: 1px solid var(--border); transition: 0.18s; }
+.toggle-slider:before { content:""; position: absolute; height: 14px; width: 14px; left: 2px; bottom: 2px; background: rgba(255,255,255,0.5); border-radius: 50%; transition: 0.18s; }
+.toggle input:checked + .toggle-slider { background: rgba(0,162,255,0.35); border-color: var(--ui-accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(14px); background: var(--ui-accent); }
+.toggle-label { font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.4px; }
 
-        .hint { font-size: 0.7rem; color: var(--text-secondary); margin-top: auto; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 15px; }
-        .status-dot { display: inline-block; width: 7px; height: 7px; background: #0f0; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 100px #0f0; }
-    </style>
+/* Zone list */
+.zone-list { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
+.zone-list::-webkit-scrollbar { width: 3px; }
+.zone-list::-webkit-scrollbar-thumb { background: var(--border); }
+.zone-empty { font-size: 0.68rem; color: var(--text-secondary); text-align: center; padding: 10px 0; opacity: 0.65; }
+.zone-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 3px; font-size: 0.68rem; color: var(--text-secondary); }
+.zone-item-left { display: flex; align-items: center; gap: 6px; }
+.zone-swatch { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+.zone-mode { font-size: 0.54rem; padding: 1px 5px; background: rgba(0,162,255,0.12); border: 1px solid rgba(0,162,255,0.28); border-radius: 2px; color: var(--ui-accent); font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.zone-del { background: none !important; border: none !important; color: #ff4444 !important; cursor: pointer; padding: 0 3px; font-size: 0.9rem; width: auto !important; min-width: 0; flex-shrink: 0; margin: 0 !important; box-shadow: none !important; filter: none !important; opacity: 0.65; transition: opacity 0.15s; }
+.zone-del:hover { opacity: 1 !important; }
+
+/* ── VIEWPORT ── */
+.viewport { flex: 1; position: relative; overflow: hidden; background: radial-gradient(circle at center, #0d1018 0%, #030305 100%); cursor: crosshair; }
+.viewport::after { content:""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; }
+
+#canvas-wrapper { position: absolute; transform-origin: 0 0; will-change: transform; }
+canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
+
+/* Empty state */
+.empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; z-index: 5; transition: opacity 0.35s; }
+.empty-state.gone { opacity: 0; }
+.empty-icon { font-size: 2.6rem; opacity: 0.22; margin-bottom: 12px; color: var(--ui-accent); }
+.empty-title { font-size: 0.82rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,162,255,0.4); }
+.empty-sub { font-size: 0.65rem; color: rgba(0,162,255,0.22); margin-top: 7px; letter-spacing: 2px; text-transform: uppercase; line-height: 1.9; }
+
+/* Drop overlay */
+.drop-overlay { position: absolute; inset: 0; background: rgba(0,162,255,0.055); border: 2px dashed var(--ui-accent); display: flex; align-items: center; justify-content: center; z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
+.drop-overlay.active { opacity: 1; }
+.drop-overlay span { font-size: 0.9rem; color: var(--ui-accent); font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+
+/* Toast */
+#toastContainer { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 5px; align-items: center; pointer-events: none; }
+.toast { background: rgba(5,8,16,0.97); border: 1px solid var(--ui-accent); color: var(--ui-accent); padding: 6px 16px; border-radius: 3px; font-size: 0.67rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; box-shadow: 0 0 14px rgba(0,162,255,0.22); white-space: nowrap; animation: tIn 0.22s ease, tOut 0.28s 1.72s ease forwards; }
+@keyframes tIn  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes tOut { to   { opacity:0; transform:translateY(3px); } }
+
+/* Hint / footer */
+.hint { font-size: 0.66rem; color: var(--text-secondary); line-height: 1.88; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+.hint b { color: var(--ui-accent); }
+.status-dot { display: inline-block; width: 7px; height: 7px; background: #00ff66; border-radius: 50%; margin-right: 5px; animation: sdot 2.4s ease-in-out infinite; }
+@keyframes sdot { 0%,100%{box-shadow:0 0 5px #0f6} 50%{box-shadow:0 0 14px #0f6,0 0 26px #0f6} }
+
+/* No-content hint in hud settings */
+.hud-none-msg { font-size: 0.65rem; color: var(--text-secondary); opacity: 0.5; text-align: center; padding: 6px 0; letter-spacing: 1px; }
+</style>
 </head>
 <body>
 
+<div id="toastContainer"></div>
+
 <div class="viewport" id="viewport">
-    <div id="canvas-wrapper">
-        <canvas id="mainCanvas"></canvas>
+    <div class="empty-state" id="emptyState">
+        <div class="empty-icon">⬡</div>
+        <div class="empty-title">BetaLink Neural Censor</div>
+        <div class="empty-sub">Ctrl+V<br>or use file input →</div>
     </div>
+    <div class="drop-overlay" id="dropOverlay"><span>▼ DROP IMAGE TO LINK ▼</span></div>
+    <div id="canvas-wrapper"><canvas id="mainCanvas"></canvas></div>
 </div>
 
 <div class="sidebar">
     <div class="sidebar-header">
         <h1>BetaLink Hub</h1>
-        <div style="font-size: 0.6rem; color: var(--ui-accent); opacity: 0.7; margin-top: 4px; font-weight: bold;">NEURAL_CENSOR_OS_V4.5</div>
+        <div class="ver">BETA_CENSOR_OS_V5.1 // ULTIMATE</div>
     </div>
 
+    <!-- ── NEURAL INPUT ── -->
     <details open>
-        <summary>Censor Settings</summary>
+        <summary>⬡ Neural Input</summary>
         <div class="menu-content">
             <div class="control-group">
-                <label>Neural Input</label>
+                <label>Upload Image</label>
                 <input type="file" id="upload" accept="image/*">
             </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="control-group" style="flex: 1;">
-                    <label>Censor LVL</label>
-                    <input type="number" id="level" value="3" min="1" max="99">
-                </div>
-                <div class="control-group" style="flex: 1;">
-                    <label>Protection %</label>
-                    <input type="number" id="pct" value="100" min="0" max="100">
-                </div>
-            </div>
-            <div class="control-group">
-                <label>Algorithm Color</label>
-                <input type="color" id="censorColor" value="#00f2ff">
-            </div>
+            <div style="font-size:0.62rem;color:rgba(0,162,255,0.45);text-align:center;letter-spacing:1.5px;padding:3px 0;border:1px dashed rgba(0,162,255,0.18);border-radius:3px;">CTRL+V</div>
+        </div>
+    </details>
+
+    <!-- ── CENSOR SETTINGS ── -->
+    <details open>
+        <summary>⬡ Censor Algorithm</summary>
+        <div class="menu-content">
             <div class="control-group">
                 <label>Blocking Algorithm</label>
                 <select id="fx">
                     <option value="pixel">PIXELATE</option>
                     <option value="black">VOID BLACK</option>
-                    <option value="glitch">NEURAL GLITCH</option>
+                    <option value="glitch">BETA GLITCH</option>
                     <option value="hex">HEX ENCRYPT</option>
                     <option value="hazard">STIMULI WARNING</option>
                     <option value="grid">SCAN GRID</option>
+                    <option value="static">TV STATIC</option>
+                    <option value="noise">SIGNAL NOISE</option>
+                    <option value="blur">SIGNAL BLUR</option>
+                    <option value="redact">BETA REDACT</option>
                 </select>
+            </div>
+            <div class="control-group" id="censorColorGroup">
+                <label>Algorithm Color</label>
+                <input type="color" id="censorColor" value="#00f2ff">
+            </div>
+            <div class="control-group" id="hexWordsGroup">
+                <label>Hex Words (comma separated)</label>
+                <input type="text" id="hexWords" placeholder="BLOCK,BETA,SAFE,DATA">
+            </div>
+            <div class="control-group" id="censorIntensityGroup">
+                <label>Intensity</label>
+                <div class="range-row">
+                    <input type="range" id="censorIntensity" min="1" max="100" value="50">
+                    <span class="range-val" id="intensityVal">50</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Opacity</label>
+                <div class="range-row">
+                    <input type="range" id="censorOpacity" min="10" max="100" value="100">
+                    <span class="range-val" id="opacityVal">100%</span>
+                </div>
             </div>
         </div>
     </details>
 
+    <!-- ── HUD SETTINGS ── -->
     <details open>
-        <summary>Beta HUD Settings</summary>
+        <summary>⬡ Beta HUD Settings</summary>
         <div class="menu-content">
-            <div class="control-group">
-                <label>HUD Interface Color</label>
-                <input type="color" id="hudColor" value="#ffffff">
-            </div>
-            <div class="control-group">
-                <label>HUD Size (%)</label>
-                <input type="range" id="hudScale" min="20" max="250" value="100">
-            </div>
             <div class="control-group">
                 <label>Interface Skin</label>
                 <select id="hudStyle">
-                    <option value="default">BETA-STANDARD</option>
-                    <option value="tactical">NEURAL-SWAT</option>
+                    <option value="none">— NONE —</option>
+                    <option value="default" selected>BETA-STANDARD</option>
+                    <option value="tactical">BETA-SWAT</option>
                     <option value="minimal">CIV-SAFE</option>
                     <option value="warning">TOTAL-BLOCK</option>
                     <option value="retro">LEGACY-LINK</option>
-                    <option value="ghost">SYNAPTIC-VOID</option>
+                    <option value="medical">BETAHEALTH</option>
+                    <option value="deeplink">DEEP-HACK</option>
+                    <option value="corporate">BETA-SHIELD</option>
+                    <option value="apex">BETA-LINK</option>
+                    <option value="redacted">[BETALOCK]</option>
                 </select>
             </div>
-            <div class="control-group">
-                <label>HUD Position</label>
-                <select id="hudPos">
-                    <option value="tr">TOP-RIGHT</option>
-                    <option value="tl">TOP-LEFT</option>
-                    <option value="br">BOTTOM-RIGHT</option>
-                    <option value="bl">BOTTOM-LEFT</option>
-                </select>
+            <div id="hudSettingsBody" style="display:flex;flex-direction:column;gap:10px;">
+                <div class="control-group" id="levelGroup">
+                    <label>Censor LVL</label>
+                    <input type="number" id="level" value="3" min="1" max="99">
+                    </div>
+                <div class="control-group" id="pctGroup">
+                    <label>Protection % <span id="pctVal">100</span></label>
+                    <input type="range" id="pct" min="0" max="100" value="100">
+                </div>
+
+                <div class="control-group" id="subjectIdGroup">
+                    <label>Subject ID / Tag</label>
+                    <input type="text" id="subjectId" placeholder="UNIT-001" value="UNIT-001">
+                </div>
+                <div class="control-group" id="hudColorGroup">
+                    <label>HUD Primary Color</label>
+                    <input type="color" id="hudColor" value="#ffffff">
+                </div>
+                <div class="control-group" id="hudColor2Group">
+                    <label>HUD Secondary Color</label>
+                    <input type="color" id="hudColor2" value="#ff0066">
+                </div>
+                <div class="control-group" id="hudOpacityGroup">
+                    <label>HUD Opacity</label>
+                    <div class="range-row">
+                        <input type="range" id="hudOpacity" min="10" max="100" value="90">
+                        <span class="range-val" id="hudOpacityVal">90%</span>
+                    </div>
+                </div>
+                <div class="control-group" id="hudScaleGroup">
+                    <label>HUD Size (%)</label>
+                    <div class="range-row">
+                        <input type="range" id="hudScale" min="20" max="250" value="100">
+                        <span class="range-val" id="hudScaleVal">100%</span>
+                    </div>
+                </div>
+                <div class="control-group" id="hudPosGroup">
+                    <label>HUD Position</label>
+                    <select id="hudPos">
+                        <option value="tr">TOP-RIGHT</option>
+                        <option value="tl">TOP-LEFT</option>
+                        <option value="br">BOTTOM-RIGHT</option>
+                        <option value="bl">BOTTOM-LEFT</option>
+                    </select>
+                </div>
+                <div class="toggle-row" id="showTimestampRow">
+                    <span class="toggle-label">Show Timestamp</span>
+                    <label class="toggle"><input type="checkbox" id="showTimestamp" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="toggle-row" id="showZoneCountRow">
+                    <span class="toggle-label">Show Zone Count</span>
+                    <label class="toggle"><input type="checkbox" id="showZoneCount" checked><span class="toggle-slider"></span></label>
+                </div>
             </div>
+            <div id="hudNoneMsg" class="hud-none-msg" style="display:none;">HUD DISABLED</div>
         </div>
     </details>
 
-    <button id="copy">Sync to Clipboard</button>
-    <button id="undo" class="secondary">Undo (Ctrl+Z)</button>
+    <!-- ── EXPORT ── -->
+    <details>
+        <summary>⬡ Export / Share</summary>
+        <div class="menu-content">
+            <button id="copy">⎘ Sync to Clipboard</button>
+            <button id="downloadPng" class="secondary">↓ Download PNG</button>
+            <button id="downloadJpg" class="secondary">↓ Download JPG</button>
+        </div>
+    </details>
+
+    <!-- ── ZONE MANAGER ── -->
+    <details open>
+        <summary>⬡ Zone Manager</summary>
+        <div class="menu-content">
+            <div class="zone-list" id="zoneList">
+                <div class="zone-empty">No zones — draw on image</div>
+            </div>
+            <div class="btn-row">
+                <button class="secondary" id="undo">↩ Undo</button>
+                <button class="secondary" id="redo">↪ Redo</button>
+            </div>
+            <button class="danger" id="clearAll">✕ Clear All Zones</button>
+        </div>
+    </details>
 
     <div class="hint">
-        <b>CONTROLS:</b><br>
-        • Scroll: Zoom | Mid-Click: Pan<br>
-        • Drag: Mask Area<br>
-        <span class="status-dot"></span> STATUS: <span style="color:#0f0">LINK ESTABLISHED</span>
+        <b>CONTROLS</b><br>
+        • Scroll: Zoom &nbsp;|&nbsp; Mid-click: Pan<br>
+        • Click+Drag: Draw Zone &nbsp;|&nbsp; F: Fit View<br>
+        • Ctrl+Z / Ctrl+Y: Undo / Redo<br>
+        • Ctrl+V: Paste Image &nbsp;|&nbsp; Ctrl+S: Save<br>
+        <br>
+        <span class="status-dot"></span>STATUS: <span style="color:#00ff66">LINK ESTABLISHED</span>
     </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
-    const wrapper = document.getElementById('canvas-wrapper'), viewport = document.getElementById('viewport');
-    let img = new Image(), zones = [], scale = 1, offX = 0, offY = 0;
-    let isDrawing = false, isPanning = false, startX, startY;
+'use strict';
+const canvas  = document.getElementById('mainCanvas');
+const ctx     = canvas.getContext('2d');
+const wrapper = document.getElementById('canvas-wrapper');
+const vp      = document.getElementById('viewport');
 
-    function drawHUD() {
-        if (!img.src) return;
-        const style = document.getElementById('hudStyle').value;
-        const pos = document.getElementById('hudPos').value;
-        const lvl = document.getElementById('level').value;
-        const pct = document.getElementById('pct').value;
-        const hudColor = document.getElementById('hudColor').value;
-        const s = document.getElementById('hudScale').value / 100;
+let img       = new Image();
+let zones     = [];
+let redoStack = [];
+let scale = 1, offX = 0, offY = 0;
+let isDrawing = false, isPanning = false;
+let startX = 0, startY = 0;
+let panLastX = 0, panLastY = 0;
+let hasImage  = false;
+let currentDraw = null;
 
-        const w = 260 * s, h = 95 * s, p = 30;
-        let x, y;
-        if (pos === 'tl') { x = p; y = p; }
-        else if (pos === 'tr') { x = canvas.width - w - p; y = p; }
-        else if (pos === 'bl') { x = p; y = canvas.height - h - p; }
-        else { x = canvas.width - w - p; y = canvas.height - h - p; }
+function g(id) { return document.getElementById(id); }
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.save();
-        ctx.shadowBlur = 20 * s; ctx.shadowColor = hudColor; ctx.strokeStyle = hudColor; ctx.lineWidth = 2 * s;
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, col) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    if (col) { el.style.color = col; el.style.borderColor = col; el.style.boxShadow = `0 0 14px ${col}44`; }
+    el.textContent = msg;
+    g('toastContainer').appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+}
 
-        if (style === 'default') {
-            ctx.fillStyle = "rgba(5, 7, 12, 0.9)";
-            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w-(20*s),y); ctx.lineTo(x+w,y+(20*s)); ctx.lineTo(x+w,y+h); ctx.lineTo(x+(20*s),y+h); ctx.lineTo(x,y+h-(20*s)); ctx.closePath();
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = hudColor; ctx.font = `bold ${16*s}px monospace`; ctx.fillText("BetaLink v4.5", x+(15*s), y+(30*s));
-            ctx.font = `${10*s}px monospace`; ctx.fillText("> STATUS: MASKING ACTIVE", x+(15*s), y+(50*s));
-            ctx.fillText(`> CENSOR LVL: ${lvl} (${pct}%)`, x+(15*s), y+(65*s));
-            ctx.fillRect(x+(15*s), y+(75*s), (pct * 2.3 * s), 4 * s);
-        } else if (style === 'tactical') {
-            ctx.fillStyle = "rgba(10, 15, 20, 0.95)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x+(3*s), y+(3*s), w-(6*s), h-(6*s));
-            ctx.fillStyle = hudColor; ctx.font = `900 ${13*s}px monospace`;
-            ctx.fillText("[ NEURAL-SEC PROT ]", x+(15*s), y+(28*s));
-            ctx.font = `${11*s}px monospace`;
-            ctx.fillText(`CENSOR LVL: ${lvl}`, x+(15*s), y+(50*s));
-            ctx.fillText(`PROTECTION: ${pct}%`, x+(15*s), y+(70*s));
-            ctx.strokeRect(x+w-(40*s), y+(15*s), 25*s, 25*s);
-        } else if (style === 'minimal') {
-            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(x, y+h-(50*s), w, 50*s);
-            ctx.strokeRect(x, y+h-(50*s), w, 50*s);
-            ctx.fillStyle = hudColor; ctx.font = `bold ${11*s}px monospace`;
-            ctx.fillText(`ID: ${lvl} | SEC: ${pct}%`, x+(15*s), y+h-(20*s));
-        } else if (style === 'warning') {
-            ctx.fillStyle = "rgba(40, 5, 5, 0.95)"; ctx.strokeStyle = "#ff0000";
-            ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
-            ctx.fillStyle = "#ff0000"; ctx.font = `bold ${18*s}px monospace`;
-            ctx.fillText(`CRITICAL: ${pct}%`, x+(25*s), y+(35*s));
-            ctx.fillStyle = "#fff"; ctx.font = `${11*s}px monospace`; ctx.fillText(`BLOCK_LEVEL: ${lvl}`, x+(15*s), y+(65*s));
-        } else if (style === 'retro') {
-            ctx.fillStyle = "rgba(0, 30, 0, 0.9)"; ctx.fillRect(x, y, w, h); ctx.strokeRect(x,y,w,h);
-            ctx.fillStyle = hudColor; ctx.font = `${12*s}px 'Courier New'`;
-            ctx.fillText(`LN: ${lvl} P_VAL: ${pct}%`, x+(10*s), y+(30*s));
-            ctx.fillText(`STATUS: ENCRYPTED`, x+(10*s), y+(55*s));
-            ctx.fillText(`_________________`, x+(10*s), y+(70*s));
-        } else if (style === 'ghost') {
-            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath();
-            if (ctx.roundRect) ctx.roundRect(x, y, w, 60 * s, 10 * s); else ctx.rect(x,y,w,60*s);
-            ctx.fill(); ctx.strokeStyle = hudColor; ctx.stroke();
-            ctx.fillStyle = hudColor; ctx.font = `italic ${15*s}px sans-serif`;
-            ctx.fillText(`Neural Link: ${lvl}`, x+(20*s), y+(35*s));
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+    return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`;
+}
+function getTimestamp() { return new Date().toTimeString().slice(0,8); }
+function getDateStamp()  { return new Date().toISOString().slice(0,10); }
+function calcX(pos, w, p) { return (pos==='tl'||pos==='bl') ? p : canvas.width  - w - p; }
+function calcY(pos, h, p) { return (pos==='tl'||pos==='tr') ? p : canvas.height - h - p; }
+
+// ── IMAGE LOAD ────────────────────────────────────────────────────────────────
+function loadImageSrc(src) {
+    const i = new Image();
+    i.onload = () => {
+        img = i;
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        zones = []; redoStack = [];
+        const vw = vp.offsetWidth, vh = vp.offsetHeight;
+        scale = Math.min(vw / img.width, vh / img.height) * 0.9;
+        offX = (vw - img.width  * scale) / 2;
+        offY = (vh - img.height * scale) / 2;
+        hasImage = true;
+        updateXform(); render();
+        g('emptyState').classList.add('gone');
+        updateZoneList();
+        toast('IMAGE LINKED ✓');
+    };
+    i.src = src;
+}
+
+g('upload').onchange = e => {
+    if (!e.target.files[0]) return;
+    const r = new FileReader();
+    r.onload = ev => loadImageSrc(ev.target.result);
+    r.readAsDataURL(e.target.files[0]);
+};
+
+window.addEventListener('paste', e => {
+    for (const item of (e.clipboardData?.items || [])) {
+        if (item.type.startsWith('image/')) {
+            const r = new FileReader();
+            r.onload = ev => loadImageSrc(ev.target.result);
+            r.readAsDataURL(item.getAsFile());
+            break;
         }
+    }
+});
+
+
+// ── TRANSFORM ─────────────────────────────────────────────────────────────────
+function updateXform() { wrapper.style.transform = `translate(${offX}px,${offY}px) scale(${scale})`; }
+function fitView() {
+    if (!hasImage) return;
+    scale = Math.min(vp.offsetWidth / img.width, vp.offsetHeight / img.height) * 0.9;
+    offX = (vp.offsetWidth  - img.width  * scale) / 2;
+    offY = (vp.offsetHeight - img.height * scale) / 2;
+    updateXform(); render();
+}
+
+// ── VIEWPORT EVENTS ───────────────────────────────────────────────────────────
+vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const zoom = e.deltaY > 0 ? 0.9 : 1.1;
+    const r = vp.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    offX = mx - (mx - offX) * zoom; offY = my - (my - offY) * zoom;
+    scale *= zoom; updateXform();
+}, { passive: false });
+
+vp.addEventListener('mousedown', e => {
+    if (e.button === 1) { isPanning = true; panLastX = e.clientX; panLastY = e.clientY; e.preventDefault(); return; }
+    if (e.button === 0 && hasImage) {
+        e.preventDefault();
+        const r = canvas.getBoundingClientRect();
+        const sx = (e.clientX - r.left) / scale;
+        const sy = (e.clientY - r.top)  / scale;
+        if (sx < 0 || sy < 0 || sx > canvas.width || sy > canvas.height) return;
+        isDrawing = true;
+        startX = sx;
+        startY = sy;
+    }
+});
+
+vp.addEventListener('dragstart', e => e.preventDefault());
+
+
+window.addEventListener('mousemove', e => {
+    if (isPanning) {
+        offX += e.clientX - panLastX; offY += e.clientY - panLastY;
+        panLastX = e.clientX; panLastY = e.clientY; updateXform();
+    }
+    if (isDrawing && hasImage) {
+        const r = canvas.getBoundingClientRect();
+        const ex = (e.clientX - r.left) / scale, ey = (e.clientY - r.top) / scale;
+        const cdx = Math.max(0, Math.min(startX, ex));
+const cdy = Math.max(0, Math.min(startY, ey));
+const cdw = Math.min(Math.max(startX, ex), canvas.width)  - cdx;
+const cdh = Math.min(Math.max(startY, ey), canvas.height) - cdy;
+currentDraw = { x: cdx, y: cdy, w: cdw, h: cdh };
+        render();
+    }
+});
+
+window.addEventListener('mouseup', e => {
+    if (isPanning) { isPanning = false; return; }
+    if (isDrawing) {
+        isDrawing = false; currentDraw = null;
+        if (!hasImage) return;
+        const r = canvas.getBoundingClientRect();
+        const ex = (e.clientX - r.left) / scale, ey = (e.clientY - r.top) / scale;
+        const w = Math.abs(ex - startX), h = Math.abs(ey - startY);
+        if (w > 4 && h > 4) {
+        redoStack = [];
+        const rx = Math.max(0, Math.min(startX, ex));
+        const ry = Math.max(0, Math.min(startY, ey));
+        const rw = Math.min(Math.max(startX, ex), canvas.width)  - rx;
+        const rh = Math.min(Math.max(startY, ey), canvas.height) - ry;
+        if (rw < 4 || rh < 4) { render(); return; }
+        zones.push({
+        x: rx, y: ry, w: rw, h: rh,
+
+                mode:      g('fx').value,
+                color:     g('censorColor').value,
+                hexWords:  g('hexWords').value.split(',').map(w=>w.trim()).filter(Boolean),
+                intensity: parseInt(g('censorIntensity').value),
+                opacity:   parseInt(g('censorOpacity').value),
+            });
+            updateZoneList(); render();
+        } else {
+            render();
+        }
+            isDrawing = false;
+    isPanning = false;
+    currentDraw = null;
+    }
+});
+
+// ── UNDO / REDO ───────────────────────────────────────────────────────────────
+function undo() { if (!zones.length) return; redoStack.push(zones.pop()); updateZoneList(); render(); toast('UNDO ✓'); }
+function redo() { if (!redoStack.length) return; zones.push(redoStack.pop()); updateZoneList(); render(); toast('REDO ✓'); }
+g('undo').onclick = undo;
+g('redo').onclick = redo;
+g('clearAll').onclick = () => { if (!zones.length) return; zones=[]; redoStack=[]; updateZoneList(); render(); toast('ZONES CLEARED','#ff4444'); };
+
+// ── ZONE LIST ─────────────────────────────────────────────────────────────────
+function updateZoneList() {
+    const el = g('zoneList');
+    if (!zones.length) { el.innerHTML = '<div class="zone-empty">No zones — draw on image</div>'; return; }
+    el.innerHTML = '';
+    const noColorModes = ['pixel','black','static','noise','blur','redact'];
+    zones.forEach((z, i) => {
+        const div = document.createElement('div');
+        div.className = 'zone-item';
+        const hasColor = !noColorModes.includes(z.mode);
+        div.innerHTML = `
+            <div class="zone-item-left">
+                ${hasColor ? `<div class="zone-swatch" style="background:${z.color}"></div>` : ''}
+                <span class="zone-mode">${z.mode}</span>
+                <span style="font-size:0.62rem;">${Math.round(z.w)}×${Math.round(z.h)}</span>
+            </div>
+            <button class="zone-del" title="Delete zone">✕</button>`;
+        div.querySelector('.zone-del').onclick = () => {
+            zones.splice(i, 1); redoStack = []; updateZoneList(); render();
+        };
+        el.appendChild(div);
+    });
+}
+
+
+
+// ── APPLY ZONE EFFECT ─────────────────────────────────────────────────────────
+function applyZone(z) {
+    const opacity    = (z.opacity  ?? 100) / 100;
+    const color      = z.color     || '#00f2ff';
+    const intensity  = z.intensity ?? 50;
+    const hexWords   = z.hexWords  || [];
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    if (z.mode === 'pixel') {
+        const step = Math.max(2, Math.round(4 + intensity * 0.22));
+        const tw = Math.max(1, z.w / step), th = Math.max(1, z.h / step);
+        const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
+        tmp.getContext('2d').drawImage(canvas, z.x, z.y, z.w, z.h, 0, 0, tw, th);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(tmp, 0, 0, tw, th, z.x, z.y, z.w, z.h);
+        ctx.imageSmoothingEnabled = true;
+
+    } else if (z.mode === 'black') {
+        ctx.fillStyle = '#000'; ctx.fillRect(z.x, z.y, z.w, z.h);
+
+    } else if (z.mode === 'glitch') {
+        const ww = Math.ceil(z.w), wh = Math.ceil(z.h);
+        const off = document.createElement('canvas'); off.width = ww; off.height = wh;
+        const offCtx = off.getContext('2d');
+        offCtx.drawImage(canvas, z.x, z.y, ww, wh, 0, 0, ww, wh);
+        const id = offCtx.getImageData(0, 0, ww, wh);
+        const rgb = parseInt(color.substring(1), 16);
+        const cr = (rgb>>16)&255, cg=(rgb>>8)&255, cb=rgb&255;
+        const threshold = 1 - (intensity / 100) * 0.75;
+        for (let i = 0; i < id.data.length; i += 4) {
+            if (Math.random() > threshold) { id.data[i]=cr; id.data[i+1]=cg; id.data[i+2]=cb; }
+        }
+        offCtx.putImageData(id, 0, 0);
+        ctx.drawImage(off, z.x, z.y);
+
+    } else if (z.mode === 'hex') {
+        applyHexEffect(z, color, hexWords, intensity);
+
+    } else if (z.mode === 'hazard') {
+        ctx.save(); ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h); ctx.clip();
+        ctx.fillStyle = color; ctx.fillRect(z.x, z.y, z.w, z.h);
+        const stripe = Math.max(10, intensity * 0.28);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = stripe * 0.52;
+        for (let i = -120; i < z.w + z.h; i += stripe) {
+            ctx.beginPath(); ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i+stripe*0.8, z.y+z.h); ctx.stroke();
+        }
+        ctx.restore();
+
+    } else if (z.mode === 'grid') {
+        const sp = Math.max(4, Math.round((100 - intensity) * 0.18 + 4));
+        ctx.strokeStyle = color; ctx.lineWidth = 1;
+        ctx.globalAlpha *= 0.65;
+        for (let i = 0; i <= z.w; i += sp) { ctx.beginPath(); ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i, z.y+z.h); ctx.stroke(); }
+        for (let i = 0; i <= z.h; i += sp) { ctx.beginPath(); ctx.moveTo(z.x, z.y+i); ctx.lineTo(z.x+z.w, z.y+i); ctx.stroke(); }
+
+    } else if (z.mode === 'static') {
+        // Pure TV static — full pixel replacement
+        const ww = Math.ceil(z.w), wh = Math.ceil(z.h);
+        const off = document.createElement('canvas'); off.width = ww; off.height = wh;
+        const offCtx = off.getContext('2d');
+        const id = offCtx.createImageData(ww, wh);
+        for (let i = 0; i < id.data.length; i += 4) {
+            const v = Math.random() * 255;
+            id.data[i] = v; id.data[i+1] = v; id.data[i+2] = v; id.data[i+3] = 255;
+        }
+        offCtx.putImageData(id, 0, 0);
+        // scanline overlay
+        offCtx.fillStyle = 'rgba(0,0,0,0.28)';
+        for (let y = 0; y < wh; y += 2) offCtx.fillRect(0, y, ww, 1);
+        ctx.drawImage(off, z.x, z.y);
+
+    } else if (z.mode === 'noise') {
+        // Adds noise on top of existing pixels (preserves image)
+        const ww = Math.ceil(z.w), wh = Math.ceil(z.h);
+        const off = document.createElement('canvas'); off.width = ww; off.height = wh;
+        const offCtx = off.getContext('2d');
+        offCtx.drawImage(canvas, z.x, z.y, ww, wh, 0, 0, ww, wh);
+        const id = offCtx.getImageData(0, 0, ww, wh);
+        const amount = intensity * 2.5;
+        for (let i = 0; i < id.data.length; i += 4) {
+            const n = (Math.random() - 0.5) * amount;
+            id.data[i]   = Math.min(255, Math.max(0, id.data[i]   + n));
+            id.data[i+1] = Math.min(255, Math.max(0, id.data[i+1] + n));
+            id.data[i+2] = Math.min(255, Math.max(0, id.data[i+2] + n));
+        }
+        offCtx.putImageData(id, 0, 0);
+        ctx.drawImage(off, z.x, z.y);
+
+    } else if (z.mode === 'blur') {
+        // Zoom-blur radial effect
+        const passes = Math.max(3, Math.round(intensity / 10));
+        const ww = Math.ceil(z.w), wh = Math.ceil(z.h);
+        const tmp = document.createElement('canvas'); tmp.width = ww; tmp.height = wh;
+        tmp.getContext('2d').drawImage(canvas, z.x, z.y, ww, wh, 0, 0, ww, wh);
+        const a0 = ctx.globalAlpha;
+        ctx.globalAlpha = a0 / passes;
+        for (let i = 0; i < passes; i++) {
+            const d = (i + 1) * (intensity / 25);
+            ctx.drawImage(tmp, 0, 0, ww, wh, z.x - d, z.y - d, ww + d*2, wh + d*2);
+        }
+        ctx.globalAlpha = a0;
+
+    } else if (z.mode === 'redact') {
+        ctx.fillStyle = '#000'; ctx.fillRect(z.x, z.y, z.w, z.h);
+        const fs = Math.max(8, Math.min(20, z.h * 0.36));
+        ctx.fillStyle = hc; ctx.font = `bold ${fs}px monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('[ BETA REDACTED ]', z.x + z.w/2, z.y + z.h/2);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(z.x, z.y+0.5); ctx.lineTo(z.x+z.w, z.y+0.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(z.x, z.y+z.h-0.5); ctx.lineTo(z.x+z.w, z.y+z.h-0.5); ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function applyHexEffect(z, color, hexWords, intensity) {
+    ctx.fillStyle = 'rgba(0,0,0,0.95)'; ctx.fillRect(z.x, z.y, z.w, z.h);
+    const fractures = [
+        {x1:z.x,        y1:z.y,     x2:z.x+15,     y2:z.y-5,     c:'#00f0ff'},
+        {x1:z.x+20,     y1:z.y,     x2:z.x+35,     y2:z.y-5,     c:'#ff0066'},
+        {x1:z.x+z.w,    y1:z.y,     x2:z.x+z.w-15, y2:z.y-5,     c:'#00f0ff'},
+        {x1:z.x+z.w-20, y1:z.y,     x2:z.x+z.w-35, y2:z.y-5,     c:'#ff0066'},
+        {x1:z.x,        y1:z.y+z.h, x2:z.x+15,     y2:z.y+z.h+5, c:'#00f0ff'},
+        {x1:z.x+20,     y1:z.y+z.h, x2:z.x+35,     y2:z.y+z.h+5, c:'#ff0066'},
+        {x1:z.x+z.w,    y1:z.y+z.h, x2:z.x+z.w-15, y2:z.y+z.h+5, c:'#00f0ff'},
+        {x1:z.x+z.w-20, y1:z.y+z.h, x2:z.x+z.w-35, y2:z.y+z.h+5, c:color},
+    ];
+    fractures.forEach(f => {
+        ctx.beginPath(); ctx.moveTo(f.x1,f.y1); ctx.lineTo(f.x2,f.y2);
+        ctx.lineWidth = 2; ctx.strokeStyle = f.c; ctx.stroke();
+    });
+    ctx.font = "12px 'Courier New',monospace"; ctx.textBaseline = 'top';
+    const words   = hexWords.length ? hexWords : ['BLOCK','BETA','SAFE','DATA','SECURE','LOCK'];
+    const density = 0.15 + (intensity / 100) * 0.6;
+    const ov = 18;
+    for (let ty = z.y-ov; ty < z.y+z.h+ov; ty += 25) {
+        for (let tx = z.x-ov; tx < z.x+z.w+ov; tx += 80) {
+            if (Math.random() > density) continue;
+            const isOv = tx < z.x || tx > z.x+z.w-30 || ty < z.y || ty > z.y+z.h-10;
+            if (isOv && Math.random() > 0.3) continue;
+            const word = words[Math.floor(Math.random() * words.length)];
+            ctx.fillStyle = 'rgba(0,240,255,0.4)'; ctx.fillText(word, tx+1, ty+1);
+            ctx.fillStyle = 'rgba(255,0,102,0.4)'; ctx.fillText(word, tx-1, ty-1);
+            ctx.fillStyle = `rgba(${hexToRgb(color)},${isOv?0.35:0.65})`; ctx.fillText(word, tx, ty);
+        }
+    }
+    const artN = Math.round(intensity * 0.5);
+    for (let i = 0; i < artN; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,240,255,0.75)' : 'rgba(255,0,102,0.75)';
+        ctx.fillRect(z.x+Math.random()*(z.w+20)-10, z.y+Math.random()*(z.h+20)-10, Math.random()*2+0.5, Math.random()*8+1);
+    }
+    ctx.textBaseline = 'alphabetic';
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+function drawHUD() {
+    if (!hasImage || canvas.width === 0) return;
+    const style  = g('hudStyle').value;
+    if (style === 'none') return;
+
+    const pos    = g('hudPos').value;
+    const lvl    = g('level').value;
+    const pct    = Math.min(100, Math.max(0, parseInt(g('pct').value) || 0));
+    const hc     = g('hudColor').value;
+    const hc2    = g('hudColor2').value;
+    const s      = g('hudScale').value / 100;
+    const hOpac  = g('hudOpacity').value / 100;
+    const subId  = g('subjectId').value || 'UNIT-001';
+    const showTS = g('showTimestamp').checked;
+    const showZC = g('showZoneCount').checked;
+    const ts     = showTS ? getTimestamp() : null;
+    const zc     = showZC ? zones.length   : null;
+    const blink  = Math.floor(Date.now() / 520) % 2 === 0;
+    const PAD    = 28;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.save();
+    ctx.globalAlpha = hOpac;
+
+    // ─── BETA-STANDARD (UNCHANGED FROM V1) ────────────────────────────────────
+    if (style === 'default') {
+        const w = 260*s, h = 95*s;
+        const x = calcX(pos,w,PAD), y = calcY(pos,h,PAD);
+        ctx.shadowBlur = 20*s; ctx.shadowColor = hc;
+        ctx.strokeStyle = hc; ctx.lineWidth = 2*s;
+        ctx.fillStyle = "rgba(5,7,12,0.9)";
+        ctx.beginPath();
+        ctx.moveTo(x,y); ctx.lineTo(x+w-20*s,y); ctx.lineTo(x+w,y+20*s);
+        ctx.lineTo(x+w,y+h); ctx.lineTo(x+20*s,y+h); ctx.lineTo(x,y+h-20*s);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = hc;
+        ctx.font = `bold ${16*s}px monospace`; ctx.fillText("BetaLink v4.5", x+15*s, y+30*s);
+        ctx.font = `${10*s}px monospace`;
+        ctx.fillText("> STATUS: MASKING ACTIVE", x+15*s, y+50*s);
+        ctx.fillText(`> SUBJECT: ${subId}`, x+15*s, y+62*s);
+        ctx.fillText(`> CENSOR LVL: ${lvl} (${pct}%)`, x+15*s, y+75*s);
+        ctx.fillRect(x+15*s, y+85*s, pct*2.3*s, 4*s);
+
+    // ─── BETA-SWAT ─────────────────────────────────────────────────────────────
+    } else if (style === 'tactical') {
+        const W = 288*s, H = (showTS||showZC ? 142 : 126)*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.shadowBlur = 12*s; ctx.shadowColor = hc;
+        ctx.fillStyle = 'rgba(6,9,18,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc;  ctx.lineWidth = 2*s;   ctx.strokeRect(x,y,W,H);
+        ctx.strokeStyle = hc2; ctx.lineWidth = 1*s;   ctx.strokeRect(x+5*s,y+5*s,W-10*s,H-10*s);
+        // Corner ticks
+        const tk = 14*s; ctx.lineWidth = 2*s; ctx.strokeStyle = hc;
+        [[x,y,1,1],[x+W,y,-1,1],[x,y+H,1,-1],[x+W,y+H,-1,-1]].forEach(([cx,cy,dx,dy]) => {
+            ctx.beginPath(); ctx.moveTo(cx+dx*tk,cy); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+dy*tk); ctx.stroke();
+        });
+        // Header band
+        ctx.save(); ctx.globalAlpha *= 0.18; ctx.fillStyle = hc; ctx.fillRect(x,y,W,24*s); ctx.restore();
+        ctx.fillStyle = hc; ctx.font = `900 ${11*s}px monospace`;
+        ctx.fillText('■ BETA-SEC PROTECTION ACTIVE ■', x+14*s, y+17*s);
+        ctx.font = `${10*s}px monospace`;
+        let row = y+38*s; const L = 15*s;
+        ctx.fillText(`SUBJECT  : ${subId}`,    x+14*s, row); row+=L;
+        ctx.fillText(`CENSOR LVL: ${lvl}`,     x+14*s, row); row+=L;
+        ctx.fillText(`PROTECTION: ${pct}%`,    x+14*s, row); row+=L;
+        if (ts)          { ctx.fillText(`TIME   : ${ts}`,         x+14*s, row); row+=L; }
+        if (zc !== null) { ctx.fillText(`ZONES  : ${zc} ACTIVE`,  x+14*s, row); row+=L; }
+        // Side pct box
+        ctx.strokeStyle = hc2; ctx.lineWidth = 2*s;
+        ctx.strokeRect(x+W-52*s, y+28*s, 38*s, 74*s);
+        ctx.fillStyle = hc2; ctx.font = `bold ${22*s}px monospace`;
+        ctx.textAlign = 'center'; ctx.fillText(`${pct}`, x+W-33*s, y+68*s);
+        ctx.font = `${8*s}px monospace`; ctx.fillText('PCT', x+W-33*s, y+90*s);
+        ctx.textAlign = 'left';
+        // coverage bar
+        const bw = W-28*s;
+        ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(x+14*s, y+H-14*s, bw, 5*s);
+        ctx.fillStyle = hc; ctx.fillRect(x+14*s, y+H-14*s, bw*pct/100, 5*s);
+
+    // ─── CIV-SAFE ──────────────────────────────────────────────────────────────
+    } else if (style === 'minimal') {
+        let info = `${subId}  ·  LVL ${lvl}  ·  ${pct}%`;
+        if (ts) info += `  ·  ${ts}`;
+        if (zc !== null) info += `  ·  ${zc} ZN`;
+        const W = 270*s, H = 56*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc; ctx.lineWidth = 1*s; ctx.strokeRect(x,y,W,H);
+        ctx.fillStyle = hc; ctx.fillRect(x, y, 3*s, H);
+        ctx.font = `bold ${12*s}px monospace`; ctx.fillStyle = hc;
+        ctx.fillText('BetaLink', x+11*s, y+20*s);
+        ctx.font = `${9*s}px monospace`;
+        ctx.fillText(info, x+11*s, y+38*s);
+        ctx.font = `bold ${20*s}px monospace`;
+        const bwt = ctx.measureText(lvl).width;
+        ctx.fillText(lvl, x+W-bwt-11*s, y+H/2+7*s);
+
+    // ─── TOTAL-BLOCK ───────────────────────────────────────────────────────────
+    } else if (style === 'warning') {
+        const W = 285*s, H = (showTS||showZC ? 120 : 100)*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        const pulse = 0.8 + Math.sin(Date.now()/350) * 0.2;
+        ctx.shadowBlur = 30*s * pulse; ctx.shadowColor = hc;
+        ctx.fillStyle = 'rgba(32,3,3,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc;
+        ctx.lineWidth = 2.5*s; ctx.strokeRect(x,y,W,H);
+        // stripe header
+        ctx.save(); ctx.beginPath(); ctx.rect(x,y,W,20*s); ctx.clip();
+        for (let i=-40; i<W+20; i+=14) {
+            ctx.fillStyle = i%28 < 14 ? 'rgba(255,0,0,0.55)' : 'rgba(0,0,0,0.55)';
+            ctx.fillRect(x+i, y, 14, 20*s);
+        }
+        ctx.restore();
+        ctx.fillStyle = hc; ctx.font = `bold ${16*s}px monospace`;
+        ctx.fillText('⚠ CRITICAL BLOCK ACTIVE ⚠', x+13*s, y+39*s);
+        ctx.fillStyle = '#ffffff'; ctx.font = `${10*s}px monospace`;
+        let row = y+57*s; const L = 15*s;
+        ctx.fillText(`SUBJECT: ${subId}`,     x+13*s, row); row+=L;
+        ctx.fillText(`BLOCK LVL: ${lvl}`,     x+13*s, row); row+=L;
+        if (ts)          { ctx.fillText(`TIMESTAMP: ${ts}`,       x+13*s, row); row+=L; }
+        if (zc !== null) { ctx.fillText(`ZONES BLOCKED: ${zc}`,   x+13*s, row); }
+
+    // ─── LEGACY-LINK ───────────────────────────────────────────────────────────
+    } else if (style === 'retro') {
+        const W = 272*s, H = 120*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(0,17,0,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc; ctx.lineWidth = 1.5*s; ctx.strokeRect(x,y,W,H);
+        // CRT scanlines
+        ctx.save(); ctx.beginPath(); ctx.rect(x,y,W,H); ctx.clip();
+        for (let i=0; i<H; i+=4) { ctx.fillStyle='rgba(0,0,0,0.16)'; ctx.fillRect(x,y+i,W,2); }
+        ctx.restore();
+        ctx.fillStyle = hc; ctx.font = `${10*s}px 'Courier New',monospace`;
+        let row = y+21*s; const L = 15*s;
+        ctx.fillText(`BETALINK LEGACY v1.0`,         x+10*s, row); row+=L;
+        ctx.fillText('--------------------',          x+10*s, row); row+=L;
+        ctx.fillText(`SBJ : ${subId}`,                x+10*s, row); row+=L;
+        ctx.fillText(`LVL : ${lvl}  PCT: ${pct}%`,   x+10*s, row); row+=L;
+        if (ts)          { ctx.fillText(`SYS : ${ts}`,              x+10*s, row); row+=L; }
+        if (zc !== null) { ctx.fillText(`ZNS : ${zc} ENCRYPTED`,    x+10*s, row); row+=L; }
+        if (blink) ctx.fillText('_', x+10*s, row);
+
+    // ─── BETAHEALTH ────────────────────────────────────────────────────────────
+    } else if (style === 'medical') {
+        const W = 272*s, H = (showTS||showZC ? 138 : 116)*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(2,10,14,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc; ctx.lineWidth = 1.5*s; ctx.strokeRect(x,y,W,H);
+        // Medical cross
+        ctx.fillStyle = hc;
+        ctx.fillRect(x+9*s,  y+9*s,  20*s, 6*s);
+        ctx.fillRect(x+15*s, y+3*s,  6*s,  18*s);
+        ctx.font = `bold ${12*s}px monospace`;
+        ctx.fillText('BETAHEALTH CENSOR UNIT', x+38*s, y+20*s);
+        ctx.font = `${10*s}px monospace`;
+        let row = y+38*s; const L = 15*s;
+        ctx.fillText(`PATIENT  : ${subId}`,  x+13*s, row); row+=L;
+        ctx.fillText(`BLOCK LVL: ${lvl}`,    x+13*s, row); row+=L;
+        // vital bar
+        const vbx = x+13*s, vbw = W-26*s;
+        const bpct = pct>66 ? '#00ff88' : pct>33 ? '#ffcc00' : '#ff3333';
+        ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(vbx, row, vbw, 8*s);
+        ctx.fillStyle=bpct; ctx.fillRect(vbx, row, vbw*pct/100, 8*s); row+=18*s;
+        ctx.fillStyle=hc;
+        ctx.fillText(`PROTECTION: ${pct}%`,  x+13*s, row); row+=L;
+        if (ts)          { ctx.fillText(`RECORDED : ${ts}`,       x+13*s, row); row+=L; }
+        if (zc !== null) { ctx.fillText(`MASKED   : ${zc} ZONES`, x+13*s, row); }
+
+    // ─── DEEP-HACK ─────────────────────────────────────────────────────────────
+    } else if (style === 'deeplink') {
+        const neon = hc;
+        const W = 264*s, H = 112*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(0,4,0,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = neon; ctx.lineWidth = 1*s; ctx.strokeRect(x,y,W,H);
+        // matrix chars
+        const chars = '01ABCDEF91';
+        ctx.font = `${8*s}px monospace`; ctx.fillStyle = neon; ctx.globalAlpha *= 0.25;
+        for (let i=0; i<9; i++) ctx.fillText(chars[Math.floor(Math.random()*chars.length)], x+W-16*s, y+10*s+i*11*s);
+        ctx.globalAlpha = hOpac;
+        ctx.fillStyle = neon; ctx.font = `bold ${12*s}px 'Courier New',monospace`;
+        ctx.fillText('root@beta:~# _', x+12*s, y+20*s);
+        ctx.font = `${10*s}px 'Courier New',monospace`;
+        ctx.globalAlpha *= 0.85;
+        let row = y+36*s; const L = 16*s;
+        ctx.fillText(`> ACCESS: GRANTED [${subId}]`, x+12*s, row); row+=L;
+        ctx.fillText(`> CENSOR_PROC  [${pct}%]`,     x+12*s, row); row+=L;
+        if (zc !== null) { ctx.fillText(`> ZONES_LOCKED: ${String(zc).padStart(2,'0')}`, x+12*s, row); row+=L; }
+        ctx.fillText(`> THREAT_ID: ${(lvl*7+100).toString(16).toUpperCase()}h`, x+12*s, row); row+=L;
+        ctx.globalAlpha = hOpac;
+        const filled = Math.floor((pct/100)*22);
+        ctx.fillText('▓'.repeat(filled)+'░'.repeat(22-filled), x+12*s, row);
+        if (ts) {
+            ctx.globalAlpha *= 0.42; ctx.font = `${8*s}px monospace`;
+            ctx.fillText(ts, x+W-60*s, y+H-8*s);
+        }
+
+    // ─── BETA-SHIELD ───────────────────────────────────────────────────────────
+    } else if (style === 'corporate') {
+        const W = 285*s, H = (showTS||showZC ? 122 : 106)*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(4,6,16,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.fillStyle = hc; ctx.fillRect(x,y,W,24*s);
+        ctx.fillStyle = '#000'; ctx.font = `bold ${11*s}px monospace`;
+        ctx.fillText('◉ BETA-SHIELD™  ACTIVE', x+9*s, y+17*s);
+        ctx.strokeStyle = hc; ctx.lineWidth = 1*s; ctx.strokeRect(x,y,W,H);
+        ctx.fillStyle = hc; ctx.font = `${10*s}px monospace`;
+        let row = y+38*s; const L = 15*s;
+        ctx.fillText(`ASSET ID     : ${subId}`,        x+13*s, row); row+=L;
+        ctx.fillText(`CLASSIFICATION: LVL-${lvl}`,     x+13*s, row); row+=L;
+        ctx.fillText(`CONTENT SHIELD: ${pct}%`,        x+13*s, row); row+=L;
+        if (ts)          { ctx.fillText(`SESSION      : ${ts}`,    x+13*s, row); row+=L; }
+        if (zc !== null) { ctx.fillText(`REDACTED AREAS: ${zc}`,   x+13*s, row); row+=L; }
+        // compliance bar
+        const cbw = W-26*s;
+        ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(x+13*s, row, cbw, 5*s);
+        ctx.fillStyle = pct>=80?'#00e676':pct>=50?'#ffeb3b':'#f44336';
+        ctx.fillRect(x+13*s, row, cbw*pct/100, 5*s); row+=14*s;
+        // emblem (hc2)
+        ctx.strokeStyle = hc2; ctx.lineWidth = 2*s;
+        ctx.beginPath(); ctx.arc(x+W-28*s, y+H/2, 16*s, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x+W-28*s, y+H/2, 8*s,  0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = hc2; ctx.fillRect(x+W-29.5*s, y+H/2-16*s, 3*s, 32*s);
+
+    // ─── BETA-LINK ─────────────────────────────────────────────────────────────
+    } else if (style === 'apex') {
+        const W = 310*s, H = (showTS||showZC ? 148 : 130)*s;
+        const cut = 16*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(4,5,14,0.98)';
+        ctx.beginPath();
+        ctx.moveTo(x+cut,y); ctx.lineTo(x+W-cut,y); ctx.lineTo(x+W,y+cut);
+        ctx.lineTo(x+W,y+H-cut); ctx.lineTo(x+W-cut,y+H); ctx.lineTo(x+cut,y+H);
+        ctx.lineTo(x,y+H-cut); ctx.lineTo(x,y+cut);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = hc; ctx.lineWidth = 1.5*s; ctx.stroke();
+        // header
+        ctx.fillStyle = hc; ctx.font = `900 ${13*s}px monospace`;
+        ctx.textAlign = 'center'; ctx.fillText('◈ BetaLink SYSTEM ◈', x+W/2, y+24*s);
+        ctx.textAlign = 'left';
+        ctx.save(); ctx.globalAlpha *= 0.28;
+        ctx.beginPath(); ctx.moveTo(x+cut,y+31*s); ctx.lineTo(x+W-cut,y+31*s); ctx.stroke();
+        ctx.restore();
+        // two columns
+        const c1 = x+15*s, c2 = x+W/2+5*s;
+        ctx.font = `${9*s}px monospace`; ctx.globalAlpha *= 0.42;
+        ctx.fillText('── NEURAL STATS', c1, y+46*s); ctx.fillText('── LINK STATUS', c2, y+46*s);
+        ctx.globalAlpha = hOpac;
+        ctx.font = `${10*s}px monospace`;
+        ctx.fillText(`CENSOR LVL : ${String(lvl).padStart(2,'0')}`, c1, y+62*s);
+        ctx.fillText(`CHIP  : BL-APEX`,                              c2, y+62*s);
+        ctx.fillText(`COVERAGE   : ${pct}%`,                         c1, y+78*s);
+        ctx.fillText(`SIGNAL: OPTIMAL`,                              c2, y+78*s);
+        ctx.fillText(`SUBJECT    : ${subId}`,                        c1, y+94*s);
+        if (zc !== null) ctx.fillText(`ZONES : ${String(zc).padStart(2,'0')}`, c2, y+94*s);
+        if (ts) {
+            ctx.save(); ctx.globalAlpha *= 0.55; ctx.font = `${9*s}px monospace`;
+            ctx.fillText(`TIME  : ${ts}`, c1, y+110*s); ctx.restore();
+        }
+        // dual bars
+        const colW = (W-34*s)/2-4*s;
+        const barY = y+H-(showTS||showZC?24:22)*s;
+        ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.fillRect(c1,barY,colW,5*s); ctx.fillRect(c2,barY,colW,5*s);
+        ctx.fillStyle = hc;   ctx.fillRect(c1, barY, (pct/100)*colW, 5*s);
+        ctx.fillStyle = '#00ff88'; ctx.fillRect(c2, barY, (Math.min(lvl,99)/99)*colW, 5*s);
+        ctx.save(); ctx.globalAlpha *= 0.35; ctx.font = `${7*s}px monospace`;
+        ctx.textAlign = 'center'; ctx.fillText(`BETALINK APEX`, x+W/2, y+H-8*s); ctx.textAlign = 'left';
+        ctx.restore();
+
+    // ─── REDACTED ──────────────────────────────────────────────────────────────
+    } else if (style === 'redacted') {
+        const W = 272*s, H = (showTS||showZC ? 126 : 110)*s;
+        const x = calcX(pos,W,PAD), y = calcY(pos,H,PAD);
+        ctx.fillStyle = 'rgba(0,0,0,0.97)'; ctx.fillRect(x,y,W,H);
+        ctx.strokeStyle = hc; ctx.lineWidth = 1*s; ctx.strokeRect(x,y,W,H);
+        ctx.fillStyle = hc; ctx.font = `bold ${14*s}px monospace`;
+        ctx.fillText('[REDACTED]', x+13*s, y+24*s);
+        // redacted info bars
+        const bars = [
+            { label:`SUBJECT: ${subId}`,     bw:148*s },
+            { label:`LEVEL: ${lvl}`,         bw:82*s  },
+            { label:`PROTECTION: ${pct}%`,   bw:162*s },
+            ts          && { label:`TIME: ${ts}`,          bw:114*s },
+            zc !== null && { label:`ZONES: ${zc}`,         bw:90*s  },
+        ].filter(Boolean);
+        let row = y+42*s;
+        bars.forEach(b => {
+            ctx.fillStyle = hc; ctx.fillRect(x+13*s, row-10*s, b.bw, 12*s);
+            ctx.fillStyle = '#000'; ctx.font = `${9*s}px monospace`;
+            ctx.fillText(b.label, x+15*s, row); row+=16*s;
+        });
+    }
+
+    ctx.restore();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+    if (!hasImage) return;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    zones.forEach(applyZone);
+
+    // live drawing preview
+    if (currentDraw && currentDraw.w > 3 && currentDraw.h > 3) {
+        ctx.save();
+        ctx.setLineDash([6,4]); ctx.strokeStyle='rgba(0,162,255,0.85)'; ctx.lineWidth=1.5;
+        ctx.strokeRect(currentDraw.x, currentDraw.y, currentDraw.w, currentDraw.h);
+        ctx.fillStyle='rgba(0,162,255,0.06)';
+        ctx.fillRect(currentDraw.x, currentDraw.y, currentDraw.w, currentDraw.h);
         ctx.restore();
     }
 
-    function render() {
-        if (!img.src) return;
-        const censorColor = document.getElementById('censorColor').value;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        zones.forEach(z => {
-            ctx.save();
-            if (z.mode === 'pixel') {
-                const step = 15; const tw = Math.max(1, z.w/step), th = Math.max(1, z.h/step);
-                const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
-                tmp.getContext('2d').drawImage(canvas, z.x, z.y, z.w, z.h, 0, 0, tw, th);
-                ctx.imageSmoothingEnabled = false; ctx.drawImage(tmp, 0, 0, tw, th, z.x, z.y, z.w, z.h);
-            } else if (z.mode === 'black') {
-                ctx.fillStyle = '#000'; ctx.fillRect(z.x, z.y, z.w, z.h);
-            } else if (z.mode === 'glitch') {
-                const id = ctx.getImageData(z.x, z.y, z.w, z.h);
-                const rgb = parseInt(censorColor.substring(1), 16);
-                const r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
-                for(let i=0; i<id.data.length; i+=4) if(Math.random() > 0.85) { id.data[i]=r; id.data[i+1]=g; id.data[i+2]=b; }
-                ctx.putImageData(id, z.x, z.y);
-            } else if (z.mode === 'hex') {
-                ctx.fillStyle = "rgba(0,0,0,0.92)"; ctx.fillRect(z.x, z.y, z.w, z.h);
-                ctx.fillStyle = censorColor; ctx.font = "8px monospace";
-                for(let gy=0; gy<z.h; gy+=10) ctx.fillText(Math.random().toString(16).substr(2, Math.floor(z.w/6)), z.x+2, z.y+gy);
-            } else if (z.mode === 'hazard') {
-                ctx.save(); ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h); ctx.clip();
-                ctx.fillStyle = censorColor; ctx.fillRect(z.x, z.y, z.w, z.h); ctx.strokeStyle = "#000"; ctx.lineWidth = 10;
-                for(let i=-100; i<z.w+z.h; i+=25) { ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i+30, z.y+z.h); ctx.stroke(); }
-                ctx.restore();
-            } else if (z.mode === 'grid') {
-                ctx.strokeStyle = censorColor; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
-                for(let i=0; i<z.w; i+=10) { ctx.beginPath(); ctx.moveTo(z.x+i, z.y); ctx.lineTo(z.x+i, z.y+z.h); ctx.stroke(); }
-                for(let i=0; i<z.h; i+=10) { ctx.beginPath(); ctx.moveTo(z.x, z.y+i); ctx.lineTo(z.x+z.w, z.y+i); ctx.stroke(); }
-            }
-            ctx.restore();
-        });
-        drawHUD();
+    drawHUD();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+g('copy').onclick = () => {
+    canvas.toBlob(b => {
+        navigator.clipboard.write([new ClipboardItem({'image/png':b})])
+            .then(() => toast('SYNCED TO CLIPBOARD ✓'))
+            .catch(() => toast('CLIPBOARD DENIED','#ff4444'));
+    });
+};
+g('downloadPng').onclick = () => {
+    canvas.toBlob(b => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b); a.download = `betalink_${Date.now()}.png`; a.click();
+        toast('PNG DOWNLOAD INITIATED ✓');
+    });
+};
+g('downloadJpg').onclick = () => {
+    canvas.toBlob(b => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b); a.download = `betalink_${Date.now()}.jpg`; a.click();
+        toast('JPG DOWNLOAD INITIATED ✓');
+    }, 'image/jpeg', 0.96);
+};
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+    if (e.ctrlKey && e.key === 's') { e.preventDefault(); g('downloadPng').click(); }
+    if (!e.ctrlKey && (e.key === 'f' || e.key === 'F')) fitView();
+});
+
+// ── CONDITIONAL UI ────────────────────────────────────────────────────────────
+// Modes that use color / don't use color
+const COLOR_MODES   = new Set(['glitch','hex','hazard','grid']);
+// Modes where intensity has no meaning
+const NO_INTENSITY  = new Set(['black','redact']);
+// HUDs that use hc2
+const HUD_COLOR2    = new Set(['tactical','corporate','apex']);
+// HUDs that use subjectId
+const HUD_NO_SUBID  = new Set(['none']);
+
+function show(id, vis) {
+    const el = g(id);
+    if (el) el.style.display = vis ? (el.dataset.flex ? 'flex' : 'flex') : 'none';
+}
+function showFlex(id, vis) { const el = g(id); if (el) el.style.display = vis ? 'flex' : 'none'; }
+
+function updateConditionalUI() {
+    const fx  = g('fx').value;
+    const hud = g('hudStyle').value;
+    const hudIsNone = hud === 'none';
+
+    // ── censor section ──
+    showFlex('censorColorGroup',     COLOR_MODES.has(fx));
+    showFlex('hexWordsGroup',        fx === 'hex');
+    showFlex('censorIntensityGroup', !NO_INTENSITY.has(fx));
+
+    // ── HUD section: all controls hidden when none ──
+    g('hudSettingsBody').style.display = hudIsNone ? 'none' : 'flex';
+    g('hudNoneMsg').style.display      = hudIsNone ? 'block' : 'none';
+
+    if (!hudIsNone) {
+        // secondary color only for HUDs that use it
+        showFlex('hudColor2Group', HUD_COLOR2.has(hud));
     }
 
-    function updateXform() { wrapper.style.transform = `translate(${offX}px, ${offY}px) scale(${scale})`; }
+    // range value sync
+    syncLabels();
+}
 
-    viewport.onwheel = e => {
-        e.preventDefault();
-        const zoom = e.deltaY > 0 ? 0.9 : 1.1;
-        const rect = viewport.getBoundingClientRect();
-        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-        offX = mx - (mx - offX) * zoom; offY = my - (my - offY) * zoom;
-        scale *= zoom; updateXform();
-    };
+function syncLabels() {
+    g('intensityVal').textContent  = g('censorIntensity').value;
+    g('opacityVal').textContent    = g('censorOpacity').value   + '%';
+    g('hudOpacityVal').textContent = g('hudOpacity').value      + '%';
+    g('hudScaleVal').textContent   = g('hudScale').value        + '%';
+}
 
-    viewport.onmousedown = e => {
-        if (e.button === 1) { isPanning = true; e.preventDefault(); return; }
-        isDrawing = true;
-        const rect = canvas.getBoundingClientRect();
-        startX = (e.clientX - rect.left) / scale; startY = (e.clientY - rect.top) / scale;
-    };
+// ── LIVE LISTENER SETUP ───────────────────────────────────────────────────────
+const liveIds = [
+    'fx','censorColor','hexWords','censorIntensity','censorOpacity',
+    'level','pct','subjectId','hudColor','hudColor2','hudOpacity',
+    'hudScale','hudStyle','hudPos','showTimestamp','showZoneCount'
+];
+liveIds.forEach(id => {
+    const el = g(id); if (!el) return;
+    el.addEventListener('input',  () => { updateConditionalUI(); render(); });
+    el.addEventListener('change', () => { updateConditionalUI(); render(); });
+});
 
-    window.onmousemove = e => { if (isPanning) { offX += e.movementX; offY += e.movementY; updateXform(); } };
-    window.onmouseup = e => {
-        if (isDrawing) {
-            const rect = canvas.getBoundingClientRect();
-            const ex = (e.clientX - rect.left) / scale, ey = (e.clientY - rect.top) / scale;
-            if(Math.abs(ex-startX) > 2) {
-                zones.push({ x: Math.min(startX, ex), y: Math.min(startY, ey), w: Math.abs(ex-startX), h: Math.abs(ey-startY), mode: document.getElementById('fx').value });
-                render();
-            }
-        }
-        isDrawing = isPanning = false;
-    };
+// ── INIT ──────────────────────────────────────────────────────────────────────
+updateConditionalUI();
+setInterval(render, 150);
+g('pct').addEventListener('input', () => {
+    g('pctVal').textContent = g('pct').value;
+});
 
-    document.getElementById('upload').onchange = e => {
-        const r = new FileReader();
-        r.onload = ev => { img.onload = () => {
-            canvas.width = img.width; canvas.height = img.height;
-            scale = Math.min(viewport.offsetWidth/img.width, viewport.offsetHeight/img.height) * 0.9;
-            offX = (viewport.offsetWidth - img.width * scale) / 2;
-            offY = (viewport.offsetHeight - img.height * scale) / 2;
-            updateXform(); render();
-        }; img.src = ev.target.result; };
-        r.readAsDataURL(e.target.files[0]);
-    };
-
-    const undo = () => { zones.pop(); render(); };
-    document.getElementById('undo').onclick = undo;
-    window.onkeydown = e => { if(e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } };
-    document.getElementById('copy').onclick = () => canvas.toBlob(b => navigator.clipboard.write([new ClipboardItem({"image/png":b})]));
-
-    ['level', 'pct', 'censorColor', 'hudColor', 'hudStyle', 'hudPos', 'hudScale', 'fx'].forEach(id => document.getElementById(id).oninput = render);
-    setInterval(render, 150);
 </script>
 </body>
 </html>
