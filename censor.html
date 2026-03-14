@@ -123,6 +123,10 @@ canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
 
 /* No-content hint in hud settings */
 .hud-none-msg { font-size: 0.65rem; color: var(--text-secondary); opacity: 0.5; text-align: center; padding: 6px 0; letter-spacing: 1px; }
+.canvas-container {
+    position: relative;
+}
+
 </style>
 </head>
 <body>
@@ -205,6 +209,12 @@ canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
     <details open>
         <summary>⬡ Beta HUD Settings</summary>
         <div class="menu-content">
+            <div class="toggle-row" id="overlayRow">
+                <span class="toggle-label">Interface Overlay</span>
+                <label class="toggle"><input type="checkbox" id="overlayToggle"><span class="toggle-slider"></span></label>
+            </div>
+
+
             <div class="control-group">
                 <label>Interface Skin</label>
                 <select id="hudStyle">
@@ -986,7 +996,7 @@ function render() {
         ctx.fillRect(currentDraw.x, currentDraw.y, currentDraw.w, currentDraw.h);
         ctx.restore();
     }
-
+    if (g('overlayToggle').checked) drawOverlay();
     drawHUD();
 }
 
@@ -1071,7 +1081,7 @@ function syncLabels() {
 const liveIds = [
     'fx','censorColor','hexWords','censorIntensity','censorOpacity',
     'level','pct','subjectId','hudColor','hudColor2','hudOpacity',
-    'hudScale','hudStyle','hudPos','showTimestamp','showZoneCount'
+    'hudScale','hudStyle','hudPos','showTimestamp','showZoneCount','overlayToggle'
 ];
 liveIds.forEach(id => {
     const el = g(id); if (!el) return;
@@ -1085,6 +1095,36 @@ setInterval(render, 150);
 g('pct').addEventListener('input', () => {
     g('pctVal').textContent = g('pct').value;
 });
+let overlayActive = false;
+const overlayCanvas = document.createElement('canvas');
+overlayCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;';
+document.querySelector('.canvas-container').appendChild(overlayCanvas);
+
+function drawOverlay() {
+    const hud = g('hudStyle').value;
+    const hc = hud === 'none' ? '#00a2ff' : g('hudColor').value;
+    const grad = ctx.createRadialGradient(
+        canvas.width/2, canvas.height/2, canvas.height*0.3,
+        canvas.width/2, canvas.height/2, canvas.height*0.9
+    );
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = hc.replace(')', ',0.3)').replace('rgb', 'rgba');
+    ctx.lineWidth = 4;
+    ctx.strokeRect(4, 4, canvas.width-8, canvas.height-8);
+
+    for (let y = 0; y < canvas.height; y += 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(0, y, canvas.width, 2);
+    }
+}
+
+
+
+overlayCanvas.style.display = 'none';
 
 </script>
 </body>
