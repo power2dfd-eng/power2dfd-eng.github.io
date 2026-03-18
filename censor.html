@@ -90,6 +90,20 @@ button.danger:hover { background: rgba(255,30,30,0.22); box-shadow: 0 0 12px rgb
 .zone-del { background: none !important; border: none !important; color: #ff4444 !important; cursor: pointer; padding: 0 3px; font-size: 0.9rem; width: auto !important; min-width: 0; flex-shrink: 0; margin: 0 !important; box-shadow: none !important; filter: none !important; opacity: 0.65; transition: opacity 0.15s; }
 .zone-del:hover { opacity: 1 !important; }
 
+/* ── DRAW MODE BUTTONS ── */
+.draw-mode-row { display: flex; gap: 5px; }
+.draw-mode-btn {
+    flex: 1; padding: 7px 4px; font-size: 0.62rem; font-weight: 900; letter-spacing: 0.5px;
+    background: rgba(255,255,255,0.05); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    text-transform: uppercase; transition: all 0.15s; width: auto;
+}
+.draw-mode-btn:hover { background: rgba(0,162,255,0.15); color: var(--ui-accent); box-shadow: none; filter: none; }
+.draw-mode-btn.active {
+    background: rgba(0,162,255,0.18); color: var(--ui-accent);
+    border-color: var(--ui-accent); box-shadow: 0 0 8px rgba(0,162,255,0.2);
+}
+
 /* ── VIEWPORT ── */
 .viewport { flex: 1; position: relative; overflow: hidden; background: radial-gradient(circle at center, #0d1018 0%, #030305 100%); cursor: crosshair; }
 .viewport::after { content:""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; }
@@ -165,6 +179,15 @@ canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
     <details open>
         <summary>⬡ Censor Algorithm</summary>
         <div class="menu-content">
+            <!-- DRAW MODE SELECTOR -->
+            <div class="control-group">
+                <label>Draw Mode</label>
+                <div class="draw-mode-row">
+                    <button class="draw-mode-btn active" id="modeRect"   onclick="setDrawMode('rect')">▭ RECT</button>
+                    <button class="draw-mode-btn"        id="modePoly"   onclick="setDrawMode('polygon')">⬠ POLY</button>
+                    <button class="draw-mode-btn"        id="modePencil" onclick="setDrawMode('pencil')">✏ FREE</button>
+                </div>
+            </div>
             <div class="control-group">
                 <label>Blocking Algorithm</label>
                 <select id="fx">
@@ -178,6 +201,7 @@ canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
                     <option value="noise">SIGNAL NOISE</option>
                     <option value="blur">SIGNAL BLUR</option>
                     <option value="redact">BETA REDACT</option>
+                    <option value="specwave">SPECTRAL WAVE</option>
                 </select>
             </div>
             <div class="control-group" id="censorColorGroup">
@@ -320,6 +344,7 @@ canvas { box-shadow: 0 0 80px rgba(0,0,0,1); display: block; }
         • Click+Drag: Draw Zone &nbsp;|&nbsp; F: Fit View<br>
         • Ctrl+Z / Ctrl+Y: Undo / Redo<br>
         • Ctrl+V: Paste Image &nbsp;|&nbsp; Ctrl+S: Save<br>
+        • POLY: Click pts · Enter/Click origin to close · Esc: Cancel<br>
         <br>
         <span class="status-dot"></span>STATUS: <span style="color:#00ff66">LINK ESTABLISHED</span>
     </div>
@@ -342,7 +367,24 @@ let panLastX = 0, panLastY = 0;
 let hasImage  = false;
 let currentDraw = null;
 
+// ── DRAW MODE STATE ───────────────────────────────────────────────────────────
+let drawMode     = 'rect';     // 'rect' | 'polygon' | 'pencil'
+let polyPoints   = [];         // anchor points for polygon mode
+let polyMousePos = null;       // live cursor pos for polygon preview
+let pencilPoints = [];         // live path for pencil mode
+
 function g(id) { return document.getElementById(id); }
+
+// ── DRAW MODE SWITCH ──────────────────────────────────────────────────────────
+function setDrawMode(mode) {
+    drawMode = mode;
+    polyPoints = []; polyMousePos = null; pencilPoints = [];
+    isDrawing = false; currentDraw = null;
+    g('modeRect').classList.toggle('active',   mode === 'rect');
+    g('modePoly').classList.toggle('active',   mode === 'polygon');
+    g('modePencil').classList.toggle('active', mode === 'pencil');
+    render();
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function toast(msg, col) {
@@ -362,6 +404,45 @@ function getTimestamp() { return new Date().toTimeString().slice(0,8); }
 function getDateStamp()  { return new Date().toISOString().slice(0,10); }
 function calcX(pos, w, p) { return (pos==='tl'||pos==='bl') ? p : canvas.width  - w - p; }
 function calcY(pos, h, p) { return (pos==='tl'||pos==='tr') ? p : canvas.height - h - p; }
+
+function computeBBox(points) {
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+function getZoneSettings() {
+    return {
+        mode:      g('fx').value,
+        color:     g('censorColor').value,
+        hexWords:  g('hexWords').value.split(',').map(w => w.trim()).filter(Boolean),
+        intensity: parseInt(g('censorIntensity').value),
+        opacity:   parseInt(g('censorOpacity').value),
+    };
+}
+
+// ── POLYGON / PENCIL FINALIZE ─────────────────────────────────────────────────
+function finishPolygon() {
+    if (polyPoints.length < 3) { polyPoints = []; polyMousePos = null; render(); return; }
+    const bbox = computeBBox(polyPoints);
+    if (bbox.w < 4 || bbox.h < 4) { polyPoints = []; polyMousePos = null; render(); return; }
+    redoStack = [];
+    zones.push({ shape: 'polygon', points: [...polyPoints], ...bbox, ...getZoneSettings() });
+    polyPoints = []; polyMousePos = null;
+    updateZoneList(); render();
+    toast('POLYGON ZONE LOCKED ✓');
+}
+
+function finishPencil() {
+    if (pencilPoints.length < 3) { pencilPoints = []; render(); return; }
+    const bbox = computeBBox(pencilPoints);
+    if (bbox.w < 4 || bbox.h < 4) { pencilPoints = []; render(); return; }
+    redoStack = [];
+    zones.push({ shape: 'pencil', points: [...pencilPoints], ...bbox, ...getZoneSettings() });
+    pencilPoints = [];
+    updateZoneList(); render();
+    toast('FREE ZONE LOCKED ✓');
+}
 
 // ── IMAGE LOAD ────────────────────────────────────────────────────────────────
 function loadImageSrc(src) {
@@ -431,63 +512,97 @@ vp.addEventListener('mousedown', e => {
         const sx = (e.clientX - r.left) / scale;
         const sy = (e.clientY - r.top)  / scale;
         if (sx < 0 || sy < 0 || sx > canvas.width || sy > canvas.height) return;
-        isDrawing = true;
-        startX = sx;
-        startY = sy;
+
+        if (drawMode === 'rect') {
+            isDrawing = true;
+            startX = sx; startY = sy;
+
+        } else if (drawMode === 'polygon') {
+            // Close polygon if clicking near the first point
+            if (polyPoints.length >= 3) {
+                const fp = polyPoints[0];
+                const dist = Math.hypot(sx - fp.x, sy - fp.y);
+                if (dist < 14 / scale) { finishPolygon(); return; }
+            }
+            polyPoints.push({ x: sx, y: sy });
+            render();
+
+        } else if (drawMode === 'pencil') {
+            isDrawing = true;
+            pencilPoints = [{ x: sx, y: sy }];
+        }
     }
 });
 
 vp.addEventListener('dragstart', e => e.preventDefault());
-
 
 window.addEventListener('mousemove', e => {
     if (isPanning) {
         offX += e.clientX - panLastX; offY += e.clientY - panLastY;
         panLastX = e.clientX; panLastY = e.clientY; updateXform();
     }
-    if (isDrawing && hasImage) {
+
+    if (drawMode === 'rect' && isDrawing && hasImage) {
         const r = canvas.getBoundingClientRect();
         const ex = (e.clientX - r.left) / scale, ey = (e.clientY - r.top) / scale;
         const cdx = Math.max(0, Math.min(startX, ex));
-const cdy = Math.max(0, Math.min(startY, ey));
-const cdw = Math.min(Math.max(startX, ex), canvas.width)  - cdx;
-const cdh = Math.min(Math.max(startY, ey), canvas.height) - cdy;
-currentDraw = { x: cdx, y: cdy, w: cdw, h: cdh };
+        const cdy = Math.max(0, Math.min(startY, ey));
+        const cdw = Math.min(Math.max(startX, ex), canvas.width)  - cdx;
+        const cdh = Math.min(Math.max(startY, ey), canvas.height) - cdy;
+        currentDraw = { x: cdx, y: cdy, w: cdw, h: cdh };
+        render();
+
+    } else if (drawMode === 'polygon' && hasImage) {
+        const r = canvas.getBoundingClientRect();
+        polyMousePos = {
+            x: (e.clientX - r.left) / scale,
+            y: (e.clientY - r.top)  / scale
+        };
+        if (polyPoints.length > 0) render();
+
+    } else if (drawMode === 'pencil' && isDrawing && hasImage) {
+        const r = canvas.getBoundingClientRect();
+        pencilPoints.push({
+            x: (e.clientX - r.left) / scale,
+            y: (e.clientY - r.top)  / scale
+        });
         render();
     }
 });
 
 window.addEventListener('mouseup', e => {
     if (isPanning) { isPanning = false; return; }
-    if (isDrawing) {
+
+    if (drawMode === 'rect' && isDrawing) {
         isDrawing = false; currentDraw = null;
         if (!hasImage) return;
         const r = canvas.getBoundingClientRect();
         const ex = (e.clientX - r.left) / scale, ey = (e.clientY - r.top) / scale;
         const w = Math.abs(ex - startX), h = Math.abs(ey - startY);
         if (w > 4 && h > 4) {
-        redoStack = [];
-        const rx = Math.max(0, Math.min(startX, ex));
-        const ry = Math.max(0, Math.min(startY, ey));
-        const rw = Math.min(Math.max(startX, ex), canvas.width)  - rx;
-        const rh = Math.min(Math.max(startY, ey), canvas.height) - ry;
-        if (rw < 4 || rh < 4) { render(); return; }
-        zones.push({
-        x: rx, y: ry, w: rw, h: rh,
-
-                mode:      g('fx').value,
-                color:     g('censorColor').value,
-                hexWords:  g('hexWords').value.split(',').map(w=>w.trim()).filter(Boolean),
-                intensity: parseInt(g('censorIntensity').value),
-                opacity:   parseInt(g('censorOpacity').value),
+            redoStack = [];
+            const rx = Math.max(0, Math.min(startX, ex));
+            const ry = Math.max(0, Math.min(startY, ey));
+            const rw = Math.min(Math.max(startX, ex), canvas.width)  - rx;
+            const rh = Math.min(Math.max(startY, ey), canvas.height) - ry;
+            if (rw < 4 || rh < 4) { render(); return; }
+            zones.push({
+                shape: 'rect',
+                x: rx, y: ry, w: rw, h: rh,
+                ...getZoneSettings()
             });
             updateZoneList(); render();
         } else {
             render();
         }
-            isDrawing = false;
-    isPanning = false;
-    currentDraw = null;
+
+    } else if (drawMode === 'pencil' && isDrawing) {
+        isDrawing = false;
+        if (pencilPoints.length >= 3) {
+            finishPencil();
+        } else {
+            pencilPoints = []; render();
+        }
     }
 });
 
@@ -504,14 +619,16 @@ function updateZoneList() {
     if (!zones.length) { el.innerHTML = '<div class="zone-empty">No zones — draw on image</div>'; return; }
     el.innerHTML = '';
     const noColorModes = ['pixel','black','static','noise','blur','redact'];
+    const shapeIcon = { rect: '▭', polygon: '⬠', pencil: '✏' };
     zones.forEach((z, i) => {
         const div = document.createElement('div');
         div.className = 'zone-item';
         const hasColor = !noColorModes.includes(z.mode);
+        const icon = shapeIcon[z.shape || 'rect'] || '▭';
         div.innerHTML = `
             <div class="zone-item-left">
                 ${hasColor ? `<div class="zone-swatch" style="background:${z.color}"></div>` : ''}
-                <span class="zone-mode">${z.mode}</span>
+                <span class="zone-mode">${icon} ${z.mode}</span>
                 <span style="font-size:0.62rem;">${Math.round(z.w)}×${Math.round(z.h)}</span>
             </div>
             <button class="zone-del" title="Delete zone">✕</button>`;
@@ -522,7 +639,17 @@ function updateZoneList() {
     });
 }
 
-
+// ── SHAPE CLIP PATH ───────────────────────────────────────────────────────────
+function applyShapeClip(z) {
+    if (z.shape === 'polygon' || z.shape === 'pencil') {
+        if (!z.points || z.points.length < 2) return;
+        ctx.beginPath();
+        ctx.moveTo(z.points[0].x, z.points[0].y);
+        for (let i = 1; i < z.points.length; i++) ctx.lineTo(z.points[i].x, z.points[i].y);
+        ctx.closePath();
+        ctx.clip();
+    }
+}
 
 // ── APPLY ZONE EFFECT ─────────────────────────────────────────────────────────
 function applyZone(z) {
@@ -533,6 +660,9 @@ function applyZone(z) {
 
     ctx.save();
     ctx.globalAlpha = opacity;
+
+    // Clip to polygon / pencil shape before drawing effect
+    applyShapeClip(z);
 
     if (z.mode === 'pixel') {
         const step = Math.max(2, Math.round(4 + intensity * 0.22));
@@ -638,9 +768,104 @@ function applyZone(z) {
         ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(z.x, z.y+0.5); ctx.lineTo(z.x+z.w, z.y+0.5); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(z.x, z.y+z.h-0.5); ctx.lineTo(z.x+z.w, z.y+z.h-0.5); ctx.stroke();
+
+    } else if (z.mode === 'specwave') {
+        const ww = Math.ceil(z.w), wh = Math.ceil(z.h);
+        const off = document.createElement('canvas'); off.width = ww; off.height = wh;
+        const offCtx = off.getContext('2d');
+        offCtx.drawImage(canvas, z.x, z.y, ww, wh, 0, 0, ww, wh);
+        const src = offCtx.getImageData(0, 0, ww, wh);
+        const out = offCtx.createImageData(ww, wh);
+
+        const maxShift = 6  + (intensity / 100) * 38;
+        const smearLen = 8  + (intensity / 100) * 55;
+        const chaos    = 0.05 + (intensity / 100) * 0.18;
+
+        // per-row random seed for messy feel
+        const rowSeeds = [];
+        for (let py = 0; py < wh; py++) {
+            rowSeeds.push({
+                shift:  (Math.random() - 0.5) * 2 * maxShift,
+                smear:  Math.random() < 0.55 ? Math.floor(Math.random() * smearLen) : 0,
+                colorOn: Math.random() < 0.45,  // only SOME rows get color
+                hue:    Math.random(),
+                bright: 0.08 + Math.random() * 0.22,
+                dir:    Math.random() < 0.5 ? 1 : -1,
+            });
+        }
+
+        for (let py = 0; py < wh; py++) {
+            const rs = rowSeeds[py];
+            // occasionally inherit neighbour row's smear for banding
+            const rs2 = py > 0 && Math.random() < 0.3 ? rowSeeds[py-1] : rs;
+
+            for (let px = 0; px < ww; px++) {
+                // horizontal smear: stretch a source pixel across smearLen columns
+                let srcX = px;
+                if (rs2.smear > 0) {
+                    // find smear block start
+                    const blockStart = Math.floor(px / Math.max(1, rs2.smear)) * rs2.smear;
+                    srcX = Math.max(0, Math.min(ww - 1, blockStart + Math.floor(rs2.shift)));
+                } else {
+                    srcX = Math.max(0, Math.min(ww - 1, px + Math.floor(rs2.shift)));
+                }
+
+                const si = (py * ww + srcX) * 4;
+                const r0 = src.data[si], g0 = src.data[si+1], b0 = src.data[si+2];
+                const lum = (r0 * 0.299 + g0 * 0.587 + b0 * 0.114) / 255;
+
+                // dark base — crush towards black
+                const darkBase = lum * 0.18;
+
+                let rr, gg, bb;
+
+                if (rs2.colorOn && lum > 0.08) {
+                    // iridescent color on this row — blue-dominant palette with occasional red/green flash
+                    const hShift = rs2.hue + px / ww * 0.15 + (Math.random() < chaos ? Math.random() * 0.3 : 0);
+                    const h = ((hShift % 1) + 1) % 1;
+                    // bias hue toward blue (0.55-0.72) most of the time
+                    const hBiased = Math.random() < 0.72 ? 0.55 + (h % 0.18) : h;
+                    const lightness = darkBase + rs2.bright * (0.5 + lum * 0.5);
+                    ;[rr, gg, bb] = specHslToRgb(hBiased, 0.95, Math.min(0.68, lightness));
+                } else {
+                    // no color — just dark smeared structure
+                    const v = Math.round(darkBase * 255 + (Math.random() < chaos ? (Math.random()-0.5)*18 : 0));
+                    rr = gg = bb = Math.max(0, Math.min(255, v));
+                }
+
+                const di = (py * ww + px) * 4;
+                out.data[di]   = rr;
+                out.data[di+1] = gg;
+                out.data[di+2] = bb;
+                out.data[di+3] = 255;
+            }
+        }
+        offCtx.putImageData(out, 0, 0);
+        ctx.drawImage(off, z.x, z.y);
     }
 
     ctx.restore();
+}
+
+// ── SPECTRAL HSL→RGB HELPER ───────────────────────────────────────────────────
+function specHslToRgb(h, s, l) {
+    let r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1; if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
 function applyHexEffect(z, color, hexWords, intensity) {
@@ -987,7 +1212,7 @@ function render() {
     ctx.drawImage(img, 0, 0);
     zones.forEach(applyZone);
 
-    // live drawing preview
+    // ── Rect live drawing preview ─────────────────────────────────────────────
     if (currentDraw && currentDraw.w > 3 && currentDraw.h > 3) {
         ctx.save();
         ctx.setLineDash([6,4]); ctx.strokeStyle='rgba(0,162,255,0.85)'; ctx.lineWidth=1.5;
@@ -996,6 +1221,97 @@ function render() {
         ctx.fillRect(currentDraw.x, currentDraw.y, currentDraw.w, currentDraw.h);
         ctx.restore();
     }
+
+    // ── Polygon live preview ──────────────────────────────────────────────────
+    if (drawMode === 'polygon' && polyPoints.length > 0) {
+        ctx.save();
+        ctx.lineWidth = 1.5;
+
+        // Fill preview if 3+ points
+        if (polyPoints.length >= 3) {
+            ctx.beginPath();
+            ctx.moveTo(polyPoints[0].x, polyPoints[0].y);
+            for (let i = 1; i < polyPoints.length; i++) ctx.lineTo(polyPoints[i].x, polyPoints[i].y);
+            if (polyMousePos) ctx.lineTo(polyMousePos.x, polyMousePos.y);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0,162,255,0.07)';
+            ctx.fill();
+        }
+
+        // Stroke lines
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = 'rgba(0,162,255,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(polyPoints[0].x, polyPoints[0].y);
+        for (let i = 1; i < polyPoints.length; i++) ctx.lineTo(polyPoints[i].x, polyPoints[i].y);
+        if (polyMousePos) ctx.lineTo(polyMousePos.x, polyMousePos.y);
+        ctx.stroke();
+
+        // Closing preview line (last point → first point)
+        if (polyMousePos && polyPoints.length >= 2) {
+            ctx.setLineDash([3, 5]);
+            ctx.strokeStyle = 'rgba(0,255,120,0.45)';
+            ctx.beginPath();
+            if (polyMousePos) {
+                ctx.moveTo(polyMousePos.x, polyMousePos.y);
+            }
+            ctx.lineTo(polyPoints[0].x, polyPoints[0].y);
+            ctx.stroke();
+        }
+
+        ctx.setLineDash([]);
+
+        // Anchor dots
+        polyPoints.forEach((p, i) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, i === 0 ? 5 : 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = i === 0 ? 'rgba(0,255,120,0.9)' : 'rgba(0,162,255,0.9)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        });
+
+        // Highlight "close" snap zone around first point
+        if (polyMousePos && polyPoints.length >= 3) {
+            const fp = polyPoints[0];
+            const dist = Math.hypot(polyMousePos.x - fp.x, polyMousePos.y - fp.y);
+            if (dist < 14 / scale) {
+                ctx.beginPath();
+                ctx.arc(fp.x, fp.y, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(0,255,120,0.9)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    // ── Pencil live preview ───────────────────────────────────────────────────
+    if (drawMode === 'pencil' && pencilPoints.length > 1) {
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(0,162,255,0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap  = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pencilPoints[0].x, pencilPoints[0].y);
+        for (let i = 1; i < pencilPoints.length; i++) ctx.lineTo(pencilPoints[i].x, pencilPoints[i].y);
+        ctx.stroke();
+        // closing preview
+        if (pencilPoints.length >= 3) {
+            ctx.setLineDash([4, 5]);
+            ctx.strokeStyle = 'rgba(0,255,120,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(pencilPoints[pencilPoints.length - 1].x, pencilPoints[pencilPoints.length - 1].y);
+            ctx.lineTo(pencilPoints[0].x, pencilPoints[0].y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     if (g('overlayToggle').checked) drawOverlay();
     drawHUD();
 }
@@ -1029,6 +1345,19 @@ window.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
     if (e.ctrlKey && e.key === 's') { e.preventDefault(); g('downloadPng').click(); }
     if (!e.ctrlKey && (e.key === 'f' || e.key === 'F')) fitView();
+
+    // Polygon: Enter to close, Escape to cancel
+    if (e.key === 'Enter' && drawMode === 'polygon' && polyPoints.length >= 3) {
+        e.preventDefault(); finishPolygon();
+    }
+    if (e.key === 'Escape') {
+        if (drawMode === 'polygon' && polyPoints.length > 0) {
+            polyPoints = []; polyMousePos = null; render(); toast('POLYGON CANCELLED','#ff4444');
+        }
+        if (drawMode === 'pencil' && isDrawing) {
+            isDrawing = false; pencilPoints = []; render(); toast('FREE ZONE CANCELLED','#ff4444');
+        }
+    }
 });
 
 // ── CONDITIONAL UI ────────────────────────────────────────────────────────────
